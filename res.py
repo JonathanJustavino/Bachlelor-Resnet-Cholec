@@ -36,17 +36,17 @@ data_transforms = {
 
 # img_datasets = {x: datasets.ImageFolder(os.path.join(path, x), data_transforms[x]) for x in ['train', 'validate']}
 
-training_folders = ['1', '2', '3']
+training_folder = ['1', '2', '3']
 validation_folder = ['4']
-training_datasets = {}
 
-training_dataset = {x: Cholec80((os.path.join(path, x)), annotations_path, IMG_EXTENSIONS, data_transforms['train']) for x in training_folders}
-# validation_dataset = {x: Cholec80((os.path.join(path, x)), annotations_path, IMG_EXTENSIONS, data_transforms['validate']) for x in validation_folder}
 
-print(training_dataset['1'][0])
-# set = validation_dataset['4']
+dataset = {x: Cholec80((os.path.join(path, x)), annotations_path, IMG_EXTENSIONS, data_transforms['train']) for x in training_folder}
+for sub in validation_folder:
+    dataset[sub] = Cholec80((os.path.join(path, sub)), annotations_path, IMG_EXTENSIONS, data_transforms['validate'])
 
-# print(set[0])
+print(dataset)
+
+dataloaders = {x: torch.utils.data.DataLoader(dataset[x], batch_size=32, shuffle=True, num_workers=5) for x in training_folder + validation_folder }
 
 
 
@@ -68,7 +68,7 @@ def img_show(inp, title=None):
     if title:
         plt.title
 
-# inputs, classes = next(iter(dataloaders['train']))
-#
-# out = torchvision.utils.make_grid(inputs)
-# img_show(out, title=[class_names[x] for x in classes])
+inputs, classes = next(iter(dataloaders['1']))
+
+out = torchvision.utils.make_grid(inputs)
+img_show(out)
