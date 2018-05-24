@@ -1,6 +1,6 @@
 # Python
-venv/
-__pychache__/
+venv/*
+__pychache__/*
 
 # Pycharm
-.idea/
+.idea/*
