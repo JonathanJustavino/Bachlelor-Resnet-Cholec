@@ -4,9 +4,8 @@ from PIL import Image
 
 import re
 import os
+import sys
 
-
-#TODO: numerical mapping for phases
 
 def has_file_allowed_extension(filename, extensions):
     filename_lower = filename.lower()
@@ -50,12 +49,21 @@ def get_label(path, labels, class_to_idx):
 
 
 def make_dataset(dir, annotations_dir, extensions):
+    progress = '#'
+    fill = '-'
     images = []
     for root, dir_names, file_names in sorted(os.walk(dir)):
         if dir_names:
+            current = 0
+            total = len(dir_names)
+            print("\n", root)
             continue
+        current += 1
+        fraction = float(current)/total
+        percent = round(fraction * total)
+        sys.stdout.write("\r[{}{}]{:.2f}%".format((progress * percent), fill* (total - percent),(fraction * 100)))
         classes, class_threshold = find_classes(root, annotations_dir)
-        class_to_idx = mapping(classes)
+        class_to_idx = numerical_mapping(classes)
         for filename in file_names:
             if has_file_allowed_extension(filename, extensions):
                 path = os.path.join(root, filename)
@@ -70,7 +78,7 @@ def default_loader(path):
         return img.convert('RGB')
 
 
-def mapping(classes):
+def numerical_mapping(classes):
     idx = {}
     for i, clss in enumerate(classes):
         idx[clss] = i
@@ -97,10 +105,9 @@ class Cholec80(Dataset):
         self.extensions = extensions
 
         self.classes = classes
-        self.class_to_idx = mapping(classes)
+        self.class_to_idx = numerical_mapping(classes)
         self.samples = samples
         self.targets = [s[1] for s in samples]
-        print(self.class_to_idx)
 
         self.transform = transform
         self.target_transform = target_transform
@@ -110,10 +117,7 @@ class Cholec80(Dataset):
 
     def __getitem__(self, index):
         path, target = self.samples[index]
-        print('path: ', path)
-        print('label: ', target)
         sample = self.loader(path)
-        print(sample)
         if self.transform is not None:
             sample = self.transform(sample)
         if self.target_transform is not None:
