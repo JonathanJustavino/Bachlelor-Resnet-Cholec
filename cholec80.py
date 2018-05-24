@@ -6,6 +6,8 @@ import re
 import os
 
 
+#TODO: numerical mapping for phases
+
 def has_file_allowed_extension(filename, extensions):
     filename_lower = filename.lower()
     return any(filename_lower.endswith(ext) for ext in extensions)
@@ -34,7 +36,7 @@ def find_classes(video_dir, annotations_dir):
     return classes, class_threshold
 
 
-def get_label(path, labels):
+def get_label(path, labels, class_to_idx):
     """Returns the label for a single image"""
     frame_name = re.sub(".*\d+\/", "", path)
     frame_number = int(re.sub("\D+$", "", frame_name)) * 25
@@ -42,9 +44,9 @@ def get_label(path, labels):
     clss = 'preparation'
     for threshold, label in sorted_labels:
         if frame_number < int(threshold):
-            return path, clss
+            return path, class_to_idx[clss]
         clss = label
-    return path, sorted_labels[-1][1]
+    return path, class_to_idx[sorted_labels[-1][1]]
 
 
 def make_dataset(dir, annotations_dir, extensions):
@@ -53,18 +55,26 @@ def make_dataset(dir, annotations_dir, extensions):
         if dir_names:
             continue
         classes, class_threshold = find_classes(root, annotations_dir)
+        class_to_idx = mapping(classes)
         for filename in file_names:
             if has_file_allowed_extension(filename, extensions):
                 path = os.path.join(root, filename)
-                item = get_label(path, class_threshold)
+                item = get_label(path, class_threshold, class_to_idx)
                 images.append(item)
-    return images
+    return images, classes
 
 
 def default_loader(path):
     with open(path, 'rb') as f:
         img = Image.open(f)
         return img.convert('RGB')
+
+
+def mapping(classes):
+    idx = {}
+    for i, clss in enumerate(classes):
+        idx[clss] = i
+    return idx
 
 
 class Cholec80(Dataset):
@@ -79,14 +89,21 @@ class Cholec80(Dataset):
         @param target_transform: label transformation
         """
         super(Cholec80, self).__init__()
-        samples = make_dataset(root, annotations, extensions)
+        samples, classes = make_dataset(root, annotations, extensions)
+
         self.root = root
         self.loader = loader
         self.annotations = annotations
         self.extensions = extensions
+
+        self.classes = classes
+        self.class_to_idx = mapping(classes)
+        self.samples = samples
+        self.targets = [s[1] for s in samples]
+        print(self.class_to_idx)
+
         self.transform = transform
         self.target_transform = target_transform
-        self.samples = samples
 
     def __len__(self):
         return len(self.samples)
