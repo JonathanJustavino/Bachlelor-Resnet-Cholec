@@ -6,70 +6,93 @@ import re
 import os
 import sys
 
+FRAMES_PER_IMAGE = 25
+
+# video file structure: 1 image per 25 frames
+#  image_path: /root_path/[set_number]/[video_number]/[image_number].png
+#  video_dir:  /root_path/[set_number]/[video_number]/
+#  set_dir:    /root_path/[set_number]/
+#  root_dir:   /root_path/
 
 def has_file_allowed_extension(filename, extensions):
     filename_lower = filename.lower()
     return any(filename_lower.endswith(ext) for ext in extensions)
 
 
-def find_classes(video_dir, annotations_dir):
+def find_labels(video_dir, annotations_dir):
     """Finds all labels from a given video path and a annotations path"""
+
     video_number = video_dir[-2:]
     annotations_file = 'video{}-phase.txt'.format(video_number)
-    classes = []
-    thresholds = []
-    class_threshold = {}
-    with open(os.path.join(annotations_dir,annotations_file), 'r') as file:
-        for clss in file:
-            clss = clss.lower()
-            interval = re.sub("\D", "", clss)
-            formatted_clss = re.sub("\d+\s+", "", clss).strip()
-            if formatted_clss not in classes:
-                classes.append(formatted_clss)
-                thresholds.append(interval)
-    # Remove the frame, phase declaration from the list and the dict
-    classes.pop(0)
-    thresholds.pop(0)
-    for label, threshold in zip(classes, thresholds):
-        class_threshold[int(threshold)] = label
-    return classes, class_threshold
+    label_by_first_frame = {}
+    labels_set = set()
+    is_data_line = False
+
+    with open(os.path.join(annotations_dir,annotations_file), 'r') as annotation_file:
+        for annotation_line in annotation_file:
+            annotation_line = annotation_line.lower()
+            frame_num = re.sub("\D", "", annotation_line)
+            label = re.sub("\d+\s+", "", annotation_line).strip()
+
+            if label not in labels_set and is_data_line:
+                labels_set.add(label)
+                label_by_first_frame[int(frame_num)] = label
+            else:
+                is_data_line = True
+
+    return label_by_first_frame
 
 
-def get_label(path, labels, class_to_idx):
+def get_label(image_path, labels_sorted_by_first_frame, idx_by_label):
     """Returns the label for a single image"""
-    frame_name = re.sub(".*\d+\/", "", path)
-    frame_number = int(re.sub("\D+$", "", frame_name)) * 25
-    sorted_labels = sorted(labels.items())
-    clss = 'preparation'
-    for threshold, label in sorted_labels:
-        if frame_number < int(threshold):
-            return path, class_to_idx[clss]
-        clss = label
-    return path, class_to_idx[sorted_labels[-1][1]]
+
+    frame_image_name = re.sub(".*\/", "", image_path)
+    image_number = int(re.sub("\D+$", "", frame_image_name))
+    frame_number = image_number * FRAMES_PER_IMAGE
+    previous_label = 'preparation'
+
+    for first_frame_num, label in labels_sorted_by_first_frame:
+        if frame_number < first_frame_num:
+            return image_path, idx_by_label[previous_label]
+
+        previous_label = label
+
+    last_label = labels_sorted_by_first_frame[-1][1]
+
+    return image_path, idx_by_label[last_label]
 
 
-def make_dataset(dir, annotations_dir, extensions):
+def make_dataset(root_dir, annotations_dir, image_file_extensions):
     progress = '#'
     fill = '-'
     images = []
-    for root, dir_names, file_names in sorted(os.walk(dir)):
+
+    for current_dir, dir_names, file_names in sorted(os.walk(root_dir)):
         if dir_names:
             current = 0
             total = len(dir_names)
-            print("\n", root)
+            print("\n", current_dir)
             continue
+
         current += 1
-        fraction = float(current)/total
-        percent = round(fraction * total)
-        sys.stdout.write("\r[{}{}]{:.2f}%".format((progress * percent), fill* (total - percent),(fraction * 100)))
-        classes, class_threshold = find_classes(root, annotations_dir)
-        class_to_idx = numerical_mapping(classes)
-        for filename in file_names:
-            if has_file_allowed_extension(filename, extensions):
-                path = os.path.join(root, filename)
-                item = get_label(path, class_threshold, class_to_idx)
-                images.append(item)
-    return images, classes
+
+        if total:
+            fraction = float(current)/total
+            percent = round(fraction * total)
+            sys.stdout.write("\r[{}{}]{:.2f}%".format((progress * percent), fill* (total - percent),(fraction * 100)))
+
+        label_by_first_frame = find_labels(current_dir, annotations_dir)
+        labels_sorted_by_first_frame = sorted(label_by_first_frame.items())
+
+        labels = label_by_first_frame.values()
+        idx_by_label = get_idx_by_label(labels)
+
+        for image_file_name in file_names:
+            if has_file_allowed_extension(image_file_name, image_file_extensions):
+                image_path = os.path.join(current_dir, image_file_name)
+                images.append(get_label(image_path, labels_sorted_by_first_frame, idx_by_label))
+
+    return images, labels, idx_by_label
 
 
 def default_loader(path):
@@ -78,34 +101,36 @@ def default_loader(path):
         return img.convert('RGB')
 
 
-def numerical_mapping(classes):
-    idx = {}
-    for i, clss in enumerate(classes):
-        idx[clss] = i
-    return idx
+def get_idx_by_label(labels):
+    idx_by_label = {}
+
+    for i, clss in enumerate(labels):
+        idx_by_label[clss] = i
+
+    return idx_by_label
 
 
 class Cholec80(Dataset):
 
-    def __init__(self, root, annotations, extensions, transform=None, target_transform=None, loader=default_loader,):
+    def __init__(self, root, annotations, image_file_extensions, transform=None, target_transform=None, loader=default_loader,):
         """
         @param root: root folder
         @param annotations: label folder
-        @param extensions: allowed file extensions
+        @param image_file_extensions: allowed file extensions
         @param loader: sample loader
         @param transform: sample transformation
         @param target_transform: label transformation
         """
         super(Cholec80, self).__init__()
-        samples, classes = make_dataset(root, annotations, extensions)
+        samples, labels, idx_by_label = make_dataset(root, annotations, image_file_extensions)
 
         self.root = root
         self.loader = loader
         self.annotations = annotations
-        self.extensions = extensions
+        self.extensions = image_file_extensions
 
-        self.classes = classes
-        self.class_to_idx = numerical_mapping(classes)
+        self.classes = labels
+        self.class_to_idx = idx_by_label
         self.samples = samples
         self.targets = [s[1] for s in samples]
 
