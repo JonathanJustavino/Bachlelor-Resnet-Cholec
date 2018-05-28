@@ -39,7 +39,6 @@ def find_labels(video_dir, annotations_dir):
                 label_by_first_frame[int(frame_num)] = label
             else:
                 is_data_line = True
-
     return label_by_first_frame
 
 
@@ -66,6 +65,8 @@ def make_dataset(root_dir, annotations_dir, image_file_extensions):
     progress = '#'
     fill = '-'
     images = []
+    labels = []
+    idx_by_label = []
 
     for current_dir, dir_names, file_names in sorted(os.walk(root_dir)):
         if dir_names:
@@ -80,7 +81,6 @@ def make_dataset(root_dir, annotations_dir, image_file_extensions):
             fraction = float(current)/total
             percent = round(fraction * total)
             sys.stdout.write("\r[{}{}]{:.2f}%".format((progress * percent), fill* (total - percent),(fraction * 100)))
-
         label_by_first_frame = find_labels(current_dir, annotations_dir)
         labels_sorted_by_first_frame = sorted(label_by_first_frame.items())
 
@@ -91,7 +91,7 @@ def make_dataset(root_dir, annotations_dir, image_file_extensions):
             if has_file_allowed_extension(image_file_name, image_file_extensions):
                 image_path = os.path.join(current_dir, image_file_name)
                 images.append(get_label(image_path, labels_sorted_by_first_frame, idx_by_label))
-
+    print()
     return images, labels, idx_by_label
 
 
