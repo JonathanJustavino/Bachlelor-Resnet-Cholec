@@ -12,6 +12,7 @@ import os
 import time
 import copy
 import sys
+import datetime
 
 from cholec80 import Cholec80
 
@@ -21,6 +22,7 @@ IMG_EXTENSIONS = ['.png']
 path = '/media/data/ToolClassification/cholec80/frames'
 folder = '1'
 annotations_path = '/media/data/ToolClassification/cholec80/phase_annotations'
+result_path = '/home/justaviju/PycharmProjects/resnet/net_results'
 
 
 data_transforms = {
@@ -41,8 +43,8 @@ data_transforms = {
 training_folder = ['1', '2', '3']
 validation_folder = ['4']
 
-training_folder = ['3']
-validation_folder = ['4']
+# training_folder = ['3']
+# validation_folder = ['4']
 training_phase = '3'
 dataset_folders = training_folder + validation_folder
 
@@ -76,79 +78,82 @@ def progress_out(current, total):
     fraction = float(current) / total
     sys.stdout.write("\r[{}/{}]{:.2f}%".format(current, total, (fraction * 100)))
 
-# inputs, classes = next(iter(dataloaders['3']))
-#
-# out = torchvision.utils.make_grid(inputs)
-# img_show(out)
-
 
 def train(model, criterion, optimizer, scheduler, epochs=10):
     since = time.time()
+    date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
     batch_size = 72
 
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
 
     for epoch in range(epochs):
-        print('HELLO!!!')
         print("Epoch {}/{}".format(epoch, epochs - 1))
         print("-" * 10)
 
-        for phase in dataset_folders:
-            d_size = data_sizes[phase]
-            print('Phase: ', phase)
-            if phase != '4':
-                scheduler.step()
-                model.train()
-            else:
-                model.eval()
+        with open(os.path.join(result_path, date), 'a') as result_file:
 
-            running_loss = 0.0
-            running_corrects = 0
+            result_file.write("Epoch {}:\n".format(epoch))
 
-            num_run = 0
-            for inputs, labels in dataloaders[phase]:
-                #progress output
-                num_run += 1
-                current = num_run * batch_size
-                if current > 7000:
-                    break
-                progress_out(current, d_size)
+            for set in dataset_folders:
+                d_size = data_sizes[set]
+                print('Phase: ', set)
+                if set != '4':
+                    scheduler.step()
+                    model.train()
+                else:
+                    model.eval()
 
-                inputs = inputs.to(device)
-                labels = labels.to(device)
+                running_loss = 0.0
+                running_corrects = 0
 
-                optimizer.zero_grad()
+                num_run = 0
+                for inputs, labels in dataloaders[set]:
+                    # progress output
+                    num_run += 1
+                    current = num_run * batch_size
+                    progress_out(current, d_size)
 
-                with torch.set_grad_enabled(phase != '4'):
-                    outputs = model(inputs)
-                    _, preds = torch.max(outputs, 1)
-                    loss = criterion(outputs, labels)
+                    inputs = inputs.to(device)
+                    labels = labels.to(device)
 
-                    if phase != '4':
-                        loss.backward()
-                        optimizer.step()
+                    optimizer.zero_grad()
 
-                running_loss += loss.item() * inputs.size(0)
-                running_corrects += torch.sum(preds == labels.data)
+                    with torch.set_grad_enabled(set != '4'):
+                        outputs = model(inputs)
+                        _, preds = torch.max(outputs, 1)
+                        loss = criterion(outputs, labels)
 
-            epoch_loss = running_loss / data_sizes[phase]
-            epoch_acc = running_corrects.double() / data_sizes[phase]
+                        if set != '4':
+                            loss.backward()
+                            optimizer.step()
 
-            print("{} Loss: {:.4f} Acc: {:.4f}".format(phase, epoch_loss, epoch_acc))
+                    running_loss += loss.item() * inputs.size(0)
+                    running_corrects += torch.sum(preds == labels.data)
 
-            if phase == '4' and epoch_acc > best_acc:
-                best_acc = epoch_acc
-                best_model_wts = copy.deepcopy(model.state_dict())
+                epoch_loss = running_loss / data_sizes[set]
+                epoch_acc = running_corrects.double() / data_sizes[set]
+
+                print("{} Loss: {:.4f} Acc: {:.4f}".format(set, epoch_loss, epoch_acc))
+
+                if set == '4' and epoch_acc > best_acc:
+                    epoch_of_best_acc = epoch
+                    best_acc = epoch_acc
+                    best_model_wts = copy.deepcopy(model.state_dict())
+
+                result_file.write("Set: {} Loss: {:.4f} Acc: {:.4f}\n".format(set, epoch_loss, epoch_acc))
 
         print()
 
-        time_elapsed = time.time() - since
-        print("Training completed in {:.0f}m {:.0f}s".format(time_elapsed // 60, time_elapsed % 60))
-        print("Best val Acc: {:4f}".format(best_acc))
+    time_elapsed = time.time() - since
+    print("Training completed in {:.0f}m {:.0f}s".format(time_elapsed // 60, time_elapsed % 60))
+    print("Best val Acc: {:4f}".format(best_acc))
 
-        model.load_state_dict(best_model_wts)
-        return model
+    with open(os.path.join(result_path, date), 'a') as result_file:
+        result_file.write("Best val Acc: {:4f} in epoch: {}\n".format(best_acc, epoch_of_best_acc))
+
+    model.load_state_dict(best_model_wts)
+    return model
 
 
 model_conv = torchvision.models.resnet18(pretrained=True)
@@ -163,7 +168,7 @@ model_conv = model_conv.to(device)
 
 criterion = nn.CrossEntropyLoss()
 
-optimizer_conv = optim.SGD(model_conv.fc.parameters(), lr=0.001, momentum=0.9)
+optimizer_conv = optim.SGD(model_conv.fc.parameters(), lr=0.0001, momentum=0.9)
 
 
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
