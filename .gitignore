@@ -4,3 +4,6 @@ __pychache__/*
 
 # Pycharm
 .idea/*
+
+# Result Folder
+net_results/*
