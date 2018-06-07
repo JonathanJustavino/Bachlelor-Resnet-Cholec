@@ -96,9 +96,13 @@ def make_dataset(root_dir, annotations_dir, image_file_extensions):
 
 
 def default_loader(path):
-    with open(path, 'rb') as f:
-        img = Image.open(f)
-        return img.convert('RGB')
+    try:
+        with open(path, 'rb') as f:
+            img = Image.open(f)
+            return img.convert('RGB')
+    except IOError:
+        print(path)
+
 
 
 def get_idx_by_label(labels):
