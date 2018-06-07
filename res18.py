@@ -22,7 +22,8 @@ IMG_EXTENSIONS = ['.png']
 path = '/media/data/ToolClassification/cholec80/frames'
 folder = '1'
 annotations_path = '/media/data/ToolClassification/cholec80/phase_annotations'
-result_path = '/home/justaviju/PycharmProjects/resnet/net_results'
+result_path = '/media/data/ToolClassification/results'
+
 
 
 data_transforms = {
@@ -53,14 +54,15 @@ dataset = {x: Cholec80((os.path.join(path, x)), annotations_path, IMG_EXTENSIONS
 for sub in validation_folder:
     dataset[sub] = Cholec80((os.path.join(path, sub)), annotations_path, IMG_EXTENSIONS, data_transforms['validate'])
 
-print(dataset)
+loader_batch_size = 32
 
-dataloaders = {x: torch.utils.data.DataLoader(dataset[x], batch_size=72, shuffle=True, num_workers=5) for x in dataset_folders }
+dataloaders = {x: torch.utils.data.DataLoader(dataset[x], batch_size=loader_batch_size, shuffle=True, num_workers=5) for x in dataset_folders }
 data_sizes = {x: len(dataset[x]) for x in dataset_folders}
 class_names = dataset[training_phase].classes
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+print(device)
 
 def img_show(inp, title=None):
     inp = inp.numpy().transpose((1,2,0))
@@ -76,13 +78,14 @@ def img_show(inp, title=None):
 
 def progress_out(current, total):
     fraction = float(current) / total
+    if current > total:
+        current = total
     sys.stdout.write("\r[{}/{}]{:.2f}%".format(current, total, (fraction * 100)))
 
 
-def train(model, criterion, optimizer, scheduler, epochs=10):
+def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, epochs=10):
     since = time.time()
     date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
-    batch_size = 72
 
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
@@ -97,7 +100,7 @@ def train(model, criterion, optimizer, scheduler, epochs=10):
 
             for set in dataset_folders:
                 d_size = data_sizes[set]
-                print('Phase: ', set)
+                print('Set: ', set)
                 if set != '4':
                     scheduler.step()
                     model.train()
@@ -150,7 +153,7 @@ def train(model, criterion, optimizer, scheduler, epochs=10):
     print("Best val Acc: {:4f}".format(best_acc))
 
     with open(os.path.join(result_path, date), 'a') as result_file:
-        result_file.write("Best val Acc: {:4f} in epoch: {}\n".format(best_acc, epoch_of_best_acc))
+        result_file.write("Best val Acc: {:4f} in epoch: {} Learning rate: {}\n".format(best_acc, epoch_of_best_acc, learning_rate))
 
     model.load_state_dict(best_model_wts)
     return model
@@ -168,9 +171,11 @@ model_conv = model_conv.to(device)
 
 criterion = nn.CrossEntropyLoss()
 
-optimizer_conv = optim.SGD(model_conv.fc.parameters(), lr=0.0001, momentum=0.9)
+learning_rate = 0.001
+
+optimizer_conv = optim.SGD(model_conv.fc.parameters(), lr=learning_rate, momentum=0.9)
 
 
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
 
-model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, epochs=5)
+model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, loader_batch_size, learning_rate, epochs=5)
