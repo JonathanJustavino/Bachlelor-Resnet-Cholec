@@ -1,10 +1,11 @@
 from torch.utils.data.dataset import Dataset
 
-from PIL import Image
+from PIL import Image, ImageFile
 
 import re
 import os
 import sys
+import datetime
 
 FRAMES_PER_IMAGE = 25
 
@@ -13,6 +14,7 @@ FRAMES_PER_IMAGE = 25
 #  video_dir:  /root_path/[set_number]/[video_number]/
 #  set_dir:    /root_path/[set_number]/
 #  root_dir:   /root_path/
+error_path = '/home/justaviju/PycharmProjects/resnet/errormsgs/'
 
 def has_file_allowed_extension(filename, extensions):
     filename_lower = filename.lower()
@@ -96,13 +98,16 @@ def make_dataset(root_dir, annotations_dir, image_file_extensions):
 
 
 def default_loader(path):
+    date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
     try:
         with open(path, 'rb') as f:
+            ImageFile.LOAD_TRUNCATED_IMAGES = True
             img = Image.open(f)
             return img.convert('RGB')
     except IOError:
-        print(path)
-
+        with open(os.path.join(error_path, date), 'w') as error_file:
+            print(path)
+            error_file.write(path)
 
 
 def get_idx_by_label(labels):
