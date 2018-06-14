@@ -26,18 +26,19 @@ result_path = '/media/data/ToolClassification/results/resnet34'
 
 
 
+
 data_transforms = {
     'train': transforms.Compose([
         # transforms.RandomResizedCrop(224),
         # transforms.RandomHorizontalFlip(),
-        # transforms.Resize((480,270)),
+        transforms.Resize((480,270)),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ]),
     'validate': transforms.Compose([
         # transforms.Resize(256),
         # transforms.CenterCrop(224),
-        # transforms.Resize((480,270)),
+        transforms.Resize((480,270)),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ]),
@@ -58,12 +59,11 @@ for sub in validation_folder:
 
 loader_batch_size = 32
 
-dataloaders = {x: torch.utils.data.DataLoader(dataset[x], batch_size=loader_batch_size, shuffle=True, num_workers=5) for x in dataset_folders }
+dataloaders = {x: torch.utils.data.DataLoader(dataset[x], batch_size=loader_batch_size, shuffle=True, num_workers=0) for x in dataset_folders }
 data_sizes = {x: len(dataset[x]) for x in dataset_folders}
 class_names = dataset[training_phase].classes
 
-# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-device = torch.device("cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 print(device)
 
@@ -126,9 +126,7 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, epo
                     optimizer.zero_grad()
 
                     with torch.set_grad_enabled(set != '4'):
-                        print("\nSize input: ", inputs.size())
                         outputs = model(inputs)
-                        print("\nSize output: ", outputs.size())
                         _, preds = torch.max(outputs, 1)
                         loss = criterion(outputs, labels)
 
