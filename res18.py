@@ -162,8 +162,8 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, epo
 
 model_conv = torchvision.models.resnet18(pretrained=True)
 
-# for param in model_conv.parameters():
-#     param.requires_grad = False
+for param in model_conv.layer4.parameters():
+    param.requires_grad = False
 
 num_ftrs = model_conv.fc.in_features
 num_ftrs *= 27
