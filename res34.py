@@ -164,12 +164,8 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, epo
 
 model_conv = torchvision.models.resnet34(pretrained=True)
 
-# for param in model_conv.parameters():
-#     param.requires_grad = False
-
-for i, param in enumerate(model_conv.parameters()):
-    #if i < 55:
-    #    param.requires_grad = False
+# Fix last layer
+for param in model_conv.layer4.parameters():
     param.requires_grad = False
 
 
@@ -185,9 +181,15 @@ criterion = nn.CrossEntropyLoss()
 
 learning_rate = 0.0001
 
+# optim Adam
+
 optimizer_conv = optim.SGD(model_conv.fc.parameters(), lr=learning_rate, momentum=0.9)
 
 
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
 
 model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, loader_batch_size, learning_rate, epochs=40)
+
+# Ergebnisse raus schreiben
+# Netze abspeichern
+# Layer anpassen
