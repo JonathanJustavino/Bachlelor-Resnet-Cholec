@@ -28,14 +28,15 @@ result_path = '/media/data/ToolClassification/results'
 
 data_transforms = {
     'train': transforms.Compose([
-        transforms.RandomResizedCrop(224),
-        transforms.RandomHorizontalFlip(),
+        # transforms.RandomResizedCrop(224),
+        # transforms.RandomHorizontalFlip(),
+        transforms.Resize((480,270)),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ]),
     'validate': transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
+        transforms.Resize((480,270)),
+        # transforms.CenterCrop(224),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ]),
@@ -165,7 +166,9 @@ model_conv = torchvision.models.resnet18(pretrained=True)
 #     param.requires_grad = False
 
 num_ftrs = model_conv.fc.in_features
+num_ftrs *= 27
 model_conv.fc = nn.Linear(num_ftrs, 7)
+
 
 model_conv = model_conv.to(device)
 
