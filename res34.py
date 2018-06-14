@@ -25,8 +25,6 @@ annotations_path = '/media/data/ToolClassification/cholec80/phase_annotations'
 result_path = '/media/data/ToolClassification/results/resnet34'
 
 
-
-
 data_transforms = {
     'train': transforms.Compose([
         # transforms.RandomResizedCrop(224),
@@ -44,14 +42,20 @@ data_transforms = {
     ]),
 }
 
+
+def write_epoch_predictions(path, preds, labels):
+    with open(os.path.join(result_path, path), 'a') as results:
+        results.write("\nPredictions: ")
+        results.write(str(preds))
+        results.write("\nLabels:      ")
+        results.write(str(labels))
+
+
 training_folder = ['1', '2', '3']
 validation_folder = ['4']
 
-# training_folder = ['3']
-# validation_folder = ['4']
 training_phase = '3'
 dataset_folders = training_folder + validation_folder
-
 
 dataset = {x: Cholec80((os.path.join(path, x)), annotations_path, IMG_EXTENSIONS, data_transforms['train']) for x in training_folder}
 for sub in validation_folder:
@@ -59,7 +63,7 @@ for sub in validation_folder:
 
 loader_batch_size = 32
 
-dataloaders = {x: torch.utils.data.DataLoader(dataset[x], batch_size=loader_batch_size, shuffle=True, num_workers=0) for x in dataset_folders }
+dataloaders = {x: torch.utils.data.DataLoader(dataset[x], batch_size=loader_batch_size, shuffle=True, num_workers=5) for x in dataset_folders }
 data_sizes = {x: len(dataset[x]) for x in dataset_folders}
 class_names = dataset[training_phase].classes
 
@@ -89,6 +93,8 @@ def progress_out(current, total):
 def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, epochs=10):
     since = time.time()
     date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
+    predictions = date + "predictions.txt"
+    predictions_path = os.path.join(result_path, predictions)
 
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
@@ -109,6 +115,8 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, epo
                     model.train()
                 else:
                     model.eval()
+                    with open(predictions_path, 'a') as file:
+                        file.write("\nEpoch: {}\n".format(epoch))
 
                 running_loss = 0.0
                 running_corrects = 0
@@ -137,6 +145,9 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, epo
                     running_loss += loss.item() * inputs.size(0)
                     running_corrects += torch.sum(preds == labels.data)
 
+                    if set == '4' and epoch % 5 == 0:
+                        write_epoch_predictions(predictions_path, preds.cpu().numpy(), labels.data.cpu().numpy())
+
                 epoch_loss = running_loss / data_sizes[set]
                 epoch_acc = running_corrects.double() / data_sizes[set]
 
@@ -149,11 +160,9 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, epo
 
                 result_file.write("Set: {} Loss: {:.4f} Acc: {:.4f}\n".format(set, epoch_loss, epoch_acc))
 
-        print()
-
-    time_elapsed = time.time() - since
-    print("Training completed in {:.0f}m {:.0f}s".format(time_elapsed // 60, time_elapsed % 60))
-    print("Best val Acc: {:4f}".format(best_acc))
+    # time_elapsed = time.time() - since
+    # print("Training completed in {:.0f}m {:.0f}s".format(time_elapsed // 60, time_elapsed % 60))
+    # print("Best val Acc: {:4f}".format(best_acc))
 
     with open(os.path.join(result_path, date), 'a') as result_file:
         result_file.write("ResNet34 Best val Acc: {:4f} in epoch: {} Learning rate: {}\n".format(best_acc, epoch_of_best_acc, learning_rate))
@@ -189,7 +198,3 @@ optimizer_conv = optim.SGD(model_conv.fc.parameters(), lr=learning_rate, momentu
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
 
 model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, loader_batch_size, learning_rate, epochs=40)
-
-# Ergebnisse raus schreiben
-# Netze abspeichern
-# Layer anpassen
