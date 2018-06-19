@@ -61,7 +61,7 @@ dataset = {x: Cholec80((os.path.join(path, x)), annotations_path, IMG_EXTENSIONS
 for sub in validation_folder:
     dataset[sub] = Cholec80((os.path.join(path, sub)), annotations_path, IMG_EXTENSIONS, data_transforms['validate'])
 
-loader_batch_size = 32
+loader_batch_size = 64
 
 dataloaders = {x: torch.utils.data.DataLoader(dataset[x], batch_size=loader_batch_size, shuffle=True, num_workers=5) for x in dataset_folders }
 data_sizes = {x: len(dataset[x]) for x in dataset_folders}
@@ -111,7 +111,8 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, epo
                 d_size = data_sizes[set]
                 print('Set: ', set)
                 if set != '4':
-                    scheduler.step()
+                	# maybe remove the scheduler (only necessary for last top percentages)
+                    # scheduler.step()
                     model.train()
                 else:
                     model.eval()
@@ -160,10 +161,6 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, epo
 
                 result_file.write("Set: {} Loss: {:.4f} Acc: {:.4f}\n".format(set, epoch_loss, epoch_acc))
 
-    # time_elapsed = time.time() - since
-    # print("Training completed in {:.0f}m {:.0f}s".format(time_elapsed // 60, time_elapsed % 60))
-    # print("Best val Acc: {:4f}".format(best_acc))
-
     with open(os.path.join(result_path, date), 'a') as result_file:
         result_file.write("ResNet34 Best val Acc: {:4f} in epoch: {} Learning rate: {}\n".format(best_acc, epoch_of_best_acc, learning_rate))
 
@@ -173,28 +170,27 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, epo
 
 model_conv = torchvision.models.resnet34(pretrained=True)
 
-# Fix last layer
-for param in model_conv.layer4.parameters():
-    param.requires_grad = False
+# train only the last block
+for name, layer in model_conv._modules.items():
+	if name != 'layer4':
+		for param in layer.parameters():
+			param.requires_grad = False
 
 
 num_ftrs = model_conv.fc.in_features
 num_ftrs = num_ftrs * 27 # in order to reach the 13.824
-print(num_ftrs)
 
 model_conv.fc = nn.Linear(num_ftrs, 7)
-
 model_conv = model_conv.to(device)
 
 criterion = nn.CrossEntropyLoss()
-
 learning_rate = 0.0001
 
 # optim Adam
 
 optimizer_conv = optim.SGD(model_conv.fc.parameters(), lr=learning_rate, momentum=0.9)
 
-
+# maybe later on relevant
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
 
 model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, loader_batch_size, learning_rate, epochs=40)

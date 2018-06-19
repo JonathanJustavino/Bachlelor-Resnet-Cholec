@@ -25,7 +25,6 @@ annotations_path = '/media/data/ToolClassification/cholec80/phase_annotations'
 result_path = '/media/data/ToolClassification/results'
 
 
-
 data_transforms = {
     'train': transforms.Compose([
         # transforms.RandomResizedCrop(224),
@@ -55,7 +54,7 @@ dataset = {x: Cholec80((os.path.join(path, x)), annotations_path, IMG_EXTENSIONS
 for sub in validation_folder:
     dataset[sub] = Cholec80((os.path.join(path, sub)), annotations_path, IMG_EXTENSIONS, data_transforms['validate'])
 
-loader_batch_size = 32
+loader_batch_size = 128
 
 dataloaders = {x: torch.utils.data.DataLoader(dataset[x], batch_size=loader_batch_size, shuffle=True, num_workers=5) for x in dataset_folders }
 data_sizes = {x: len(dataset[x]) for x in dataset_folders}
@@ -64,6 +63,7 @@ class_names = dataset[training_phase].classes
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 print(device)
+
 
 def img_show(inp, title=None):
     inp = inp.numpy().transpose((1,2,0))
@@ -134,6 +134,8 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, epo
 
                     running_loss += loss.item() * inputs.size(0)
                     running_corrects += torch.sum(preds == labels.data)
+                    print("Prediction: ", preds)
+                    print("Label: ", labels.data)
 
                 epoch_loss = running_loss / data_sizes[set]
                 epoch_acc = running_corrects.double() / data_sizes[set]
