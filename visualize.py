@@ -7,7 +7,7 @@ import numpy as np
 root_folder = '/media/data/ToolClassification/results'
 resnet = 'resnet34'
 resnet_type = 'train-last-layer'
-document = '2018-06-03_16-46'
+document = '2018-06-18_16-46'
 
 full_path = os.path.join(root_folder, resnet, resnet_type, document)
 
