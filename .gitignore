@@ -1,10 +1,16 @@
 # Python
 venv/*
-
-__pychache__/*
+__pycache__/*
 
 # Pycharm
 .idea/*
 
 # Result Folder
 net_results/*
+
+#errorfolder
+errormsgs/*
+errormsg.txt
+
+#log-folders
+*.log
