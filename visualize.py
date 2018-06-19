@@ -2,6 +2,7 @@ import os
 import re
 import matplotlib.pyplot as plt
 import numpy as np
+from threading import Thread
 
 
 root_folder = '/media/data/ToolClassification/results'
@@ -35,8 +36,6 @@ def visualize(data):
 
 formatted_data = visualize(full_path)
 
-acc = np.array(formatted_data['4']['accuracy'])
-
 
 def retrieve_percentages(data):
     for set_nr in data:
@@ -59,12 +58,37 @@ def display_accuracy(my_list):
     plt.ylabel('Accuracy in %')
     plt.xlabel('Epoch')
     plt.title("{} {}".format(resnet, resnet_type))
-    plt.axis([0, 40, 0, 100])
-    plt.xticks([x * 4 for x in range(10)])
-    plt.yticks([x * 10 for x in range(1, 11)])
+    plt.axis([0, 17, 0, 100])   
     plt.grid(True)
     plt.show()
 
+
+def display_loss(my_list):
+    set_1 = my_list['1']['loss']
+    set_2 = my_list['2']['loss']
+    set_3 = my_list['3']['loss']
+    set_4 = my_list['4']['loss']
+
+    graph1, = plt.plot(set_1, 'r', label='Dataset 1')
+    graph2, = plt.plot(set_2, 'g', label='Dataset 2')
+    graph3, = plt.plot(set_3, 'b', label='Dataset 3')
+    graph4, = plt.plot(set_4, 'y', label='Testset')
+    plt.legend(handles=[graph1, graph2, graph3, graph4])
+    plt.ylabel('Accuracy in %')
+    plt.xlabel('Epoch')
+    plt.title("{} {}".format(resnet, resnet_type))
+    plt.axis([0, 17, 0, 3])
+    plt.grid(True)
+    plt.show()
+
+
 retrieve_percentages(formatted_data)
 
-display_accuracy(formatted_data)
+t1 = Thread(target=display_loss, args=[formatted_data])
+t2 = Thread(target=display_accuracy, args=[formatted_data])
+
+t1.start()
+t2.start()
+
+# display_accuracy(formatted_data)
+# display_loss(formatted_data)
