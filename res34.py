@@ -184,7 +184,7 @@ model_conv.fc = nn.Linear(num_ftrs, 7)
 model_conv = model_conv.to(device)
 
 criterion = nn.CrossEntropyLoss()
-learning_rate = 0.0001
+learning_rate = 0.001
 
 # optim Adam
 
@@ -193,4 +193,4 @@ optimizer_conv = optim.SGD(model_conv.fc.parameters(), lr=learning_rate, momentu
 # maybe later on relevant
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
 
-model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, loader_batch_size, learning_rate, epochs=40)
+model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, loader_batch_size, learning_rate, epochs=15)
