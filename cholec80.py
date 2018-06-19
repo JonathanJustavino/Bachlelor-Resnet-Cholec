@@ -105,7 +105,7 @@ def default_loader(path):
             img = Image.open(f)
             return img.convert('RGB')
     except IOError:
-        with open(os.path.join(error_path, date), 'w') as error_file:
+        with open(os.path.join(error_path, date), 'a') as error_file:
             print(path)
             error_file.write(path)
 
