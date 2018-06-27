@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch import Tensor
 from torch.optim import lr_scheduler
 import torchvision
 from torch.utils.data.dataset import Dataset
@@ -13,6 +14,7 @@ import time
 import copy
 import sys
 import datetime
+import csv
 
 from cholec80 import Cholec80
 
@@ -39,11 +41,14 @@ data_transforms = {
 
 
 def write_epoch_predictions(path, preds, labels):
-    with open(os.path.join(result_path, path), 'a') as results:
+    preds = Tensor.numpy(preds)
+    labels = Tensor.numpy(preds)
+    with open(os.path.join(result_path, path), 'a', newline='') as results:
+	writer = csv.writer(results, delimiter=',')
         results.write("\nPredictions: ")
-        results.write(str(preds))
+        writer.writerow(preds)
         results.write("\nLabels:      ")
-        results.write(str(labels))
+        writer.writerow(labels)
 
 
 training_folder = ['4', '2', '3']
