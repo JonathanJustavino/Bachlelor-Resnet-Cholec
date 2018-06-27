@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch import Tensor
 from torch.optim import lr_scheduler
 import torchvision
 from torch.utils.data.dataset import Dataset
@@ -13,6 +14,7 @@ import time
 import copy
 import sys
 import datetime
+import csv
 
 from cholec80 import Cholec80
 
@@ -41,11 +43,14 @@ data_transforms = {
 
 
 def write_epoch_predictions(path, preds, labels):
-    with open(os.path.join(result_path, path), 'a') as results:
-        results.write("\nPredictions: ")
-        results.write(str(preds))
-        results.write("\nLabels:      ")
-        results.write(str(labels))
+	# preds = Tensor.numpy(preds)
+	# labels = Tensor.numpy(preds)
+	with open(os.path.join(result_path, path), 'a', newline='') as results:
+		writer = csv.writer(results, delimiter=',')
+		results.write("Predictions: ")
+		writer.writerow(preds)
+		results.write("Labels:      ")
+		writer.writerow(labels)
 
 
 training_folder = ['4', '2', '3']
@@ -80,9 +85,9 @@ def img_show(inp, title=None):
     plt.pause(5)
 
 
-x, classes = next(iter(dataloaders['1']))
-o = torchvision.utils.make_grid(x)
-img_show(o)
+# x, classes = next(iter(dataloaders['1']))
+# o = torchvision.utils.make_grid(x)
+# img_show(o)
 
 
 def progress_out(current, total):
@@ -96,7 +101,7 @@ def progress_out(current, total):
 def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, validation_set, epochs=10):
     since = time.time()
     date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
-    predictions = date + "predictions.txt"
+    predictions = date + "_predictions.csv"
     predictions_path = os.path.join(result_path, predictions)
     print('Validation Set: ', validation_set)
 
@@ -131,6 +136,8 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, val
                 for inputs, labels in dataloaders[set]:
                     # progress output
                     num_run += 1
+                    if num_run > 20:
+                    	break
                     current = num_run * batch_size
                     progress_out(current, d_size)
 
