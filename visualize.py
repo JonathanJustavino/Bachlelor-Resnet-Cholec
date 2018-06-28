@@ -6,14 +6,16 @@ from threading import Thread
 
 
 root_folder = '/media/data/ToolClassification/results'
+alt_folder = '/home/justaviju/Documents/results/'
 resnet = 'resnet34'
 resnet_type = 'train-last-layer'
-document = '2018-06-18_16-46'
+full_training = 'full_training'
+document = '2018-06-25_13-23'
 
-full_path = os.path.join(root_folder, resnet, resnet_type, document)
+full_path = os.path.join(root_folder, resnet, document)
 
 
-def visualize(data):
+def format_data(data):
     data_sets = {
         '1': {'loss': [], 'accuracy': []},
         '2': {'loss': [], 'accuracy': []},
@@ -34,7 +36,7 @@ def visualize(data):
         return data_sets
 
 
-formatted_data = visualize(full_path)
+formatted_data = format_data(full_path)
 
 
 def retrieve_percentages(data):
@@ -74,18 +76,20 @@ def display_loss(my_list):
     graph3, = plt.plot(set_3, 'b', label='Dataset 3')
     graph4, = plt.plot(set_4, 'y', label='Testset')
     plt.legend(handles=[graph1, graph2, graph3, graph4])
-    plt.ylabel('Accuracy in %')
+    plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.title("{} {}".format(resnet, resnet_type))
-    plt.axis([0, 17, 0, 3])
+    plt.axis([0, 17, 0, 6])
     plt.grid(True)
     plt.show()
 
 
 retrieve_percentages(formatted_data)
 
-t1 = Thread(target=display_loss, args=[formatted_data])
-t2 = Thread(target=display_accuracy, args=[formatted_data])
+arguments = [formatted_data]
+
+t1 = Thread(target=display_loss, args=arguments)
+t2 = Thread(target=display_accuracy, args=arguments)
 
 t1.start()
 t2.start()
