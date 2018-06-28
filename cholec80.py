@@ -9,12 +9,23 @@ import datetime
 
 FRAMES_PER_IMAGE = 25
 
-# video file structure: 1 image per 25 frames
+# video file structure: 1 image per 25 framesn
 #  image_path: /root_path/[set_number]/[video_number]/[image_number].png
 #  video_dir:  /root_path/[set_number]/[video_number]/
 #  set_dir:    /root_path/[set_number]/
 #  root_dir:   /root_path/
 error_path = '/home/justaviju/PycharmProjects/resnet/errormsgs/'
+
+idx_label = {
+    'preparation': 0, 
+    'calottriangledissection': 1, 
+    'cleaningcoagulation': 2, 
+    'gallbladderdissection': 3, 
+    'gallbladderretraction': 4, 
+    'clippingcutting': 5, 
+    'gallbladderpackaging': 6
+}
+
 
 def has_file_allowed_extension(filename, extensions):
     filename_lower = filename.lower()
@@ -50,7 +61,8 @@ def get_label(image_path, labels_sorted_by_first_frame, idx_by_label):
     frame_image_name = re.sub(".*\/", "", image_path)
     image_number = int(re.sub("\D+$", "", frame_image_name))
     frame_number = image_number * FRAMES_PER_IMAGE
-    previous_label = 'preparation'
+    # initialize with first frame
+    previous_label = labels_sorted_by_first_frame[0][1]
 
     for first_frame_num, label in labels_sorted_by_first_frame:
         if frame_number < first_frame_num:
@@ -111,12 +123,13 @@ def default_loader(path):
 
 
 def get_idx_by_label(labels):
+    # labels = ['preparation', 'calottriangledissection', 'cleaningcoagulation', 'gallbladderdissection', 'gallbladderretraction', 'clippingcutting', 'gallbladderpackaging']
     idx_by_label = {}
 
-    for i, clss in enumerate(labels):
-        idx_by_label[clss] = i
-
-    return idx_by_label
+    #for i, clss in enumerate(labels):
+    #    idx_by_label[clss] = i
+    return idx_label
+    #return idx_by_label
 
 
 class Cholec80(Dataset):
