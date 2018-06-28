@@ -136,8 +136,6 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, val
                 for inputs, labels in dataloaders[set]:
                     # progress output
                     num_run += 1
-                    if num_run > 20:
-                    	break
                     current = num_run * batch_size
                     progress_out(current, d_size)
 
