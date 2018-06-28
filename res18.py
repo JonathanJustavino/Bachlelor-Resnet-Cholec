@@ -24,7 +24,7 @@ IMG_EXTENSIONS = ['.png']
 path = '/media/data/ToolClassification/cholec80/frames'
 annotations_path = '/media/data/ToolClassification/cholec80/phase_annotations'
 result_path = '/media/data/ToolClassification/results/resnet18'
-picture_size = 224
+picture_size = (384, 216)
 
 data_transforms = {
     'train': transforms.Compose([
@@ -65,9 +65,10 @@ for sub in validation_folder:
 
 loader_batch_size = 64
 
-dataloaders = {x: torch.utils.data.DataLoader(dataset[x], batch_size=loader_batch_size, shuffle=True, num_workers=5) for x in dataset_folders }
+dataloaders = {x: torch.utils.data.DataLoader(dataset[x], batch_size=loader_batch_size, shuffle=False, num_workers=5) for x in dataset_folders }
 data_sizes = {x: len(dataset[x]) for x in dataset_folders}
 class_names = dataset[training_phase].classes
+
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -194,16 +195,8 @@ for name, layer in model_conv._modules.items():
 # 		print(param.requires_grad)
 
 
-model_conv.fc = nn.Sequential(
-	nn.Linear(3584, model_conv.fc.out_features),
-	nn.Dropout(),
-	nn.Linear(model_conv.fc.out_features, 1000),
-	nn.Dropout(),
-	nn.Linear(1000, 7)
-	)
+model_conv.fc = nn.Linear(3072, 7)
 print(model_conv)
-# num_ftrs = num_ftrs * 27 # in order to reach the 13.824
-# model_conv.fc = nn.Linear(num_ftrs, 7)
 
 model_conv = model_conv.to(device)
 
