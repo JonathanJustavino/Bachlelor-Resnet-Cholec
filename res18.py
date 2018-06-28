@@ -56,7 +56,7 @@ dataset = {x: Cholec80((os.path.join(path, x)), annotations_path, IMG_EXTENSIONS
 for sub in validation_folder:
     dataset[sub] = Cholec80((os.path.join(path, sub)), annotations_path, IMG_EXTENSIONS, data_transforms['validate'])
 
-loader_batch_size = 72
+loader_batch_size = 100
 
 dataloaders = {x: torch.utils.data.DataLoader(dataset[x], batch_size=loader_batch_size, shuffle=True, num_workers=5) for x in dataset_folders }
 data_sizes = {x: len(dataset[x]) for x in dataset_folders}
@@ -82,6 +82,7 @@ def progress_out(current, total):
     fraction = float(current) / total
     if current > total:
         current = total
+        fraction = 1.0
     sys.stdout.write("\r[{}/{}]{:.2f}%".format(current, total, (fraction * 100)))
 
 
@@ -101,7 +102,7 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, val
 
         with open(os.path.join(result_path, date), 'a') as result_file:
 
-            result_file.write("Epoch {}:\n".format(epoch))
+            result_file.write("Epoch {}:\n\n\n".format(epoch))
 
             for set in dataset_folders:
                 d_size = data_sizes[set]
@@ -149,7 +150,7 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, val
                 epoch_loss = running_loss / data_sizes[set]
                 epoch_acc = running_corrects.double() / data_sizes[set]
 
-                print("{} Loss: {:.4f} Acc: {:.4f}".format(set, epoch_loss, epoch_acc))
+                print("\n{} Loss: {:.4f} Acc: {:.4f}".format(set, epoch_loss, epoch_acc))
 
                 if set == validation_set and epoch_acc > best_acc:
                     epoch_of_best_acc = epoch
@@ -182,18 +183,17 @@ model_conv = model_conv.to(device)
 criterion = nn.CrossEntropyLoss()
 learning_rate = 0.0001
 validation_set = '1'
+trainable_layers = list(model_conv.layer4.parameters()) + list(model_conv.fc.parameters())
 
 adam = False
 # optim SGD
 if adam:
-    optimizer_conv = optim.Adam(model_conv.layer4.parameters(), lr=learning_rate)
+    optimizer_conv = optim.Adam(trainable_layers, lr=learning_rate)
 else:
-    optimizer_conv = optim.SGD(model_conv.layer4.parameters(), lr=learning_rate, momentum=0.9)
-
-print(optimizer_conv)
+    optimizer_conv = optim.SGD(trainable_layers, lr=learning_rate, momentum=0.9)
 
 
-# maybe later on relevant
+# maybe relevant later on
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
 
 model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, loader_batch_size, learning_rate, validation_set, epochs=15)
