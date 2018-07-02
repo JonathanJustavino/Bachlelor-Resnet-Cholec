@@ -114,12 +114,13 @@ def default_loader(path):
     try:
         with open(path, 'rb') as f:
             ImageFile.LOAD_TRUNCATED_IMAGES = True
-            img = Image.open(f)
-            return img.convert('RGB')
+            with Image.open(f) as img:
+                return img.convert('RGB')
     except IOError:
         with open(os.path.join(error_path, date), 'a') as error_file:
             print(path)
             error_file.write(path)
+            error_file.write(IOError)
 
 
 def get_idx_by_label(labels):
