@@ -18,7 +18,6 @@ import csv
 
 from cholec80 import Cholec80
 
-# plt.ion()
 
 IMG_EXTENSIONS = ['.png']
 path = '/media/data/ToolClassification/cholec80/frames'
@@ -43,14 +42,12 @@ data_transforms = {
 
 
 def write_epoch_predictions(path, preds, labels):
-	# preds = Tensor.numpy(preds)
-	# labels = Tensor.numpy(preds)
-	with open(os.path.join(result_path, path), 'a', newline='') as results:
-		writer = csv.writer(results, delimiter=',')
-		results.write("Predictions: ")
-		writer.writerow(preds)
-		results.write("Labels:      ")
-		writer.writerow(labels)
+    with open(os.path.join(result_path, path), 'a', newline='') as results:
+        writer = csv.writer(results, delimiter=',')
+        results.write("Predictions: ")
+        writer.writerow(preds)
+        results.write("Labels:      ")
+        writer.writerow(labels)
 
 
 training_folder = ['4', '2', '3']
@@ -69,6 +66,7 @@ dataloaders = {x: torch.utils.data.DataLoader(dataset[x], batch_size=loader_batc
 data_sizes = {x: len(dataset[x]) for x in dataset_folders}
 class_names = dataset[training_phase].classes
 
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 print(device)
@@ -83,11 +81,6 @@ def img_show(inp, title=None):
     if title:
         plt.title
     plt.pause(5)
-
-
-# x, classes = next(iter(dataloaders['1']))
-# o = torchvision.utils.make_grid(x)
-# img_show(o)
 
 
 def progress_out(current, total):
@@ -193,10 +186,9 @@ for name, layer in model_conv._modules.items():
 # 		print(name)
 # 		print(param.requires_grad)
 
-model_conv.fc = nn.Linear(3584, 7)
 
-# num_ftrs = num_ftrs * 27 # in order to reach the 13.824
-# model_conv.fc = nn.Linear(num_ftrs, 7)
+model_conv.fc = nn.Linear(3584, 7)
+print(model_conv)
 
 model_conv = model_conv.to(device)
 
@@ -219,6 +211,6 @@ print("Optimizer", optimizer_conv)
 # maybe relevant later on
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
 
-model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, loader_batch_size, learning_rate, validation_set, epochs=15)
+model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, loader_batch_size, learning_rate, validation_set, epochs=200)
 
 

@@ -18,7 +18,6 @@ import csv
 
 from cholec80 import Cholec80
 
-# plt.ion()
 
 IMG_EXTENSIONS = ['.png']
 path = '/media/data/ToolClassification/cholec80/frames'
@@ -43,8 +42,6 @@ data_transforms = {
 
 
 def write_epoch_predictions(path, preds, labels):
-    # preds = Tensor.numpy(preds)
-    # labels = Tensor.numpy(preds)
     with open(os.path.join(result_path, path), 'a', newline='') as results:
         writer = csv.writer(results, delimiter=',')
         results.write("Predictions: ")
@@ -84,11 +81,6 @@ def img_show(inp, title=None):
     if title:
         plt.title
     plt.pause(5)
-
-
-# x, classes = next(iter(dataloaders['1']))
-# o = torchvision.utils.make_grid(x)
-# img_show(o)
 
 
 def progress_out(current, total):
@@ -219,6 +211,6 @@ print("Optimizer", optimizer_conv)
 # maybe relevant later on
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
 
-model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, loader_batch_size, learning_rate, validation_set, epochs=15)
+model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, loader_batch_size, learning_rate, validation_set, epochs=200)
 
 

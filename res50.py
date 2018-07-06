@@ -18,7 +18,6 @@ import csv
 
 from cholec80 import Cholec80
 
-# plt.ion()
 
 IMG_EXTENSIONS = ['.png']
 path = '/media/data/ToolClassification/cholec80/frames'
@@ -43,8 +42,6 @@ data_transforms = {
 
 
 def write_epoch_predictions(path, preds, labels):
-    # preds = Tensor.numpy(preds)
-    # labels = Tensor.numpy(preds)
     with open(os.path.join(result_path, path), 'a', newline='') as results:
         writer = csv.writer(results, delimiter=',')
         results.write("Predictions: ")
@@ -84,11 +81,6 @@ def img_show(inp, title=None):
     if title:
         plt.title
     plt.pause(5)
-
-
-# x, classes = next(iter(dataloaders['1']))
-# o = torchvision.utils.make_grid(x)
-# img_show(o)
 
 
 def progress_out(current, total):
@@ -195,7 +187,7 @@ for name, layer in model_conv._modules.items():
 # 		print(param.requires_grad)
 
 
-model_conv.fc = nn.Linear(3072, 7)
+model_conv.fc = nn.Linear(12288, 7)
 print(model_conv)
 
 model_conv = model_conv.to(device)
