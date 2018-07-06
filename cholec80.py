@@ -1,4 +1,5 @@
 from torch.utils.data.dataset import Dataset
+from bot import *
 
 from PIL import Image, ImageFile
 
@@ -119,8 +120,8 @@ def default_loader(path):
     except IOError:
         with open(os.path.join(error_path, date), 'a') as error_file:
             print(path)
+            send_message("Error occured model probably down")
             error_file.write(path)
-            error_file.write(IOError)
 
 
 def get_idx_by_label(labels):

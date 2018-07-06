@@ -8,6 +8,7 @@ from torch.utils.data.dataset import Dataset
 from torchvision import datasets, transforms, models
 import matplotlib.pyplot as plt
 import numpy as np
+from bot import *
 
 import os
 import time
@@ -23,7 +24,9 @@ IMG_EXTENSIONS = ['.png']
 path = '/media/data/ToolClassification/cholec80/frames'
 annotations_path = '/media/data/ToolClassification/cholec80/phase_annotations'
 result_path = '/media/data/ToolClassification/results/resnet34'
+net_path = '/media/data/ToolClassification/results/resnet34'
 picture_size = (384, 216)
+
 
 data_transforms = {
     'train': transforms.Compose([
@@ -55,6 +58,7 @@ validation_folder = ['1']
 
 training_phase = '3'
 dataset_folders = training_folder + validation_folder
+
 
 dataset = {x: Cholec80((os.path.join(path, x)), annotations_path, IMG_EXTENSIONS, data_transforms['train']) for x in training_folder}
 for sub in validation_folder:
@@ -91,9 +95,8 @@ def progress_out(current, total):
     sys.stdout.write("\r[{}/{}]{:.2f}%".format(current, total, (fraction * 100)))
 
 
-def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, validation_set, epochs=10):
+def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, validation_set, date, epochs=10):
     since = time.time()
-    date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
     predictions = date + "_predictions.csv"
     predictions_path = os.path.join(result_path, predictions)
     print('Validation Set: ', validation_set)
@@ -124,6 +127,8 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, val
 
                 running_loss = 0.0
                 running_corrects = 0
+                #epoch_loss = 0
+                #epoch_acc
 
                 num_run = 0
                 for inputs, labels in dataloaders[set]:
@@ -157,13 +162,21 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, val
                 epoch_acc = running_corrects.double() / data_sizes[set]
 
                 print("{} Loss: {:.4f} Acc: {:.4f}".format(set, epoch_loss, epoch_acc))
+                send_message("ResNet34 Acc: {:4f}, Loss: {} in epoch: {} in set: {}".format(epoch_acc, epoch_loss, epoch, set))
 
                 if set == validation_set and epoch_acc > best_acc:
                     epoch_of_best_acc = epoch
                     best_acc = epoch_acc
                     best_model_wts = copy.deepcopy(model.state_dict())
 
-                result_file.write("Set: {} Loss: {:.4f} Acc: {:.4f}\n".format(set, epoch_loss, epoch_acc))
+                #result_file.write("Set: {} Loss: {:.4f} Acc: {:.4f}\n".format(set, epoch_loss, epoch_acc))
+                try:
+                    print('\nwriting')
+                    torch.save(net.state_dict(), net_path + "/model")
+                    torch.save(optimizer.state_dict(), net_path + "/optimizer")
+                    torch.save(scheduler.state_dict(), net_path + "/scheduler")
+                except:
+                    print("attempt to save the network failed")
 
     with open(os.path.join(result_path, date), 'a') as result_file:
         result_file.write("ResNet34 Best val Acc: {:4f} in epoch: {} Learning rate: {}\n".format(best_acc, epoch_of_best_acc, learning_rate))
@@ -187,7 +200,7 @@ for name, layer in model_conv._modules.items():
 # 		print(param.requires_grad)
 
 
-model_conv.fc = nn.Linear(3584, 7)
+model_conv.fc = nn.Linear(3072, 7)
 print(model_conv)
 
 model_conv = model_conv.to(device)
@@ -211,6 +224,18 @@ print("Optimizer", optimizer_conv)
 # maybe relevant later on
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
 
-model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, loader_batch_size, learning_rate, validation_set, epochs=200)
+send_message("Training Started...(ResNet34)")
+
+
+date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
+try:
+    model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, loader_batch_size, learning_rate, validation_set, date, epochs=150)
+    save_model_path = os.path.join(result_path, "model_{}".format(date))
+    
+    print(save_model_path)
+    send_message("Training Finished. (ResNet34)")
+except:
+    send_message("ResNet34 crashed...")
+
 
 
