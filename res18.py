@@ -24,7 +24,8 @@ IMG_EXTENSIONS = ['.png']
 path = '/media/data/ToolClassification/cholec80/frames'
 annotations_path = '/media/data/ToolClassification/cholec80/phase_annotations'
 result_path = '/media/data/ToolClassification/results/resnet18'
-net_path = '/media/data/ToolClassification/results/resnet18'
+net_path = '/media/TCO/TCO-Studenten/justaviju/results/resnet18'
+
 picture_size = (384, 216)
 
 
@@ -72,8 +73,8 @@ class_names = dataset[training_phase].classes
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
 print(device)
+
 
 def img_show(inp, title=None):
     inp = inp.numpy().transpose((1,2,0))
@@ -103,7 +104,7 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, val
 
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
-
+    
     for epoch in range(epochs):
         print("Epoch {}/{}".format(epoch, epochs - 1))
         print("-" * 10)
@@ -127,10 +128,9 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, val
 
                 running_loss = 0.0
                 running_corrects = 0
-                #epoch_loss = 0
-                #epoch_acc
-
+                
                 num_run = 0
+
                 for inputs, labels in dataloaders[set]:
                     # progress output
                     num_run += 1
@@ -163,20 +163,21 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, val
 
                 print("{} Loss: {:.4f} Acc: {:.4f}".format(set, epoch_loss, epoch_acc))
                 send_message("ResNet18 Acc: {:4f}, Loss: {} in epoch: {} in set: {}".format(epoch_acc, epoch_loss, epoch, set))
+                result_file.write("Set: {} Loss: {:.4f} Acc: {:.4f}\n".format(set, epoch_loss, epoch_acc))
 
                 if set == validation_set and epoch_acc > best_acc:
                     epoch_of_best_acc = epoch
                     best_acc = epoch_acc
-                    best_model_wts = copy.deepcopy(model.state_dict())
-
-                #result_file.write("Set: {} Loss: {:.4f} Acc: {:.4f}\n".format(set, epoch_loss, epoch_acc))
-                try:
-                    print('\nwriting')
-                    torch.save(net.state_dict(), net_path + "/model")
-                    torch.save(optimizer.state_dict(), net_path + "/optimizer")
-                    torch.save(scheduler.state_dict(), net_path + "/scheduler")
-                except:
-                    print("attempt to save the network failed")
+                    best_model_wts = copy.deepcopy(model.state_dict())  
+                    try:
+                        print('\nSaving ResNet18')
+                        torch.save(model.state_dict(), os.path.join(net_path, "model"))
+                        torch.save(optimizer.state_dict(), os.path.join(net_path, "optimizer"))
+                        torch.save(scheduler.state_dict(), os.path.join(net_path, "scheduler"))
+                    except Exception as e:
+                        print("attempt to save the network failed")
+                        send_message("Error {}".format(e))
+                        send_message("Failed attempt to save the network.")
 
     with open(os.path.join(result_path, date), 'a') as result_file:
         result_file.write("ResNet18 Best val Acc: {:4f} in epoch: {} Learning rate: {}\n".format(best_acc, epoch_of_best_acc, learning_rate))
@@ -206,7 +207,7 @@ print(model_conv)
 model_conv = model_conv.to(device)
 
 criterion = nn.CrossEntropyLoss()
-learning_rate = 0.0001
+learning_rate = 0.0005
 validation_set = '1'
 
 trainable_layers = list(model_conv.layer4.parameters()) + list(model_conv.fc.parameters())
@@ -219,20 +220,21 @@ if adam:
 else:
     optimizer_conv = optim.SGD(trainable_layers, lr=learning_rate, momentum=0.9)
 
-print("Optimizer", optimizer_conv)
 
-# maybe relevant later on
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.1)
-
+print("Optimizer", optimizer_conv)
 send_message("Training Started...(ResNet18)")
 
-
 date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
+
 try:
     model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, loader_batch_size, learning_rate, validation_set, date, epochs=150)
-    save_model_path = os.path.join(result_path, "model_{}".format(date))
-    
-    print(save_model_path)
+    torch.save(model_conv.state_dict(), os.path.join(net_path, 'model'))
     send_message("Training Finished. (ResNet18)")
-except:
+except Exception as e:
+    print(e)
+    print("ResNet18 crashed...")
     send_message("ResNet18 crashed...")
+
+
+
