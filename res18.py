@@ -7,6 +7,8 @@ training_folder, validation_folder = setup_dataset_folders()
 data_folders = training_folder + validation_folder
 cholec = generate_dataset(data_folders)
 dataloaders = generate_dataloader(cholec, data_folders, batch_size)
+data_sizes = get_dataset_sizes(cholec, data_folders)
+device = set_device()
 
 
 model_conv = torchvision.models.resnet18(pretrained=True)
@@ -49,8 +51,8 @@ print("Optimizer", optimizer_conv)
 date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
 
 try:
-    model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, batch_size, learning_rate, validation_set, date, net_type, epochs=150)
-    torch.save(model_conv.state_dict(), os.path.join(net_path, "{}_model".format(net_type)))
+    model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, batch_size, learning_rate, cholec, dataloaders, data_folders, date, net_type, device, epochs=150)
+    torch.save(model_conv.state_dict(), os.path.join(net_path, "{}_model_test".format(net_type)))
     # send_message("Training Finished. (ResNet18)")
 except Exception as e:
     print(e)

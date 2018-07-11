@@ -111,11 +111,13 @@ def progress_out(current, total):
                      current, total, (fraction * 100)))
 
 
-def train(model, criterion, optimizer, scheduler, batch_size, learning_rate,
-          validation_set, date, net_type, epochs=10):
+def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, dataset, dataloaders,
+          dataset_folders, date, net_type, device, epochs=10):
     result_path = get_result_path(net_type.lower())
     predictions_path = os.path.join(result_path, "{}_predictions.csv".format(date))
     best_model_wts = copy.deepcopy(model.state_dict())
+    validation_set = dataset_folders.pop()
+    data_sizes = get_dataset_sizes(dataset, dataset_folders)
     best_acc = 0.0
 
     for epoch in range(epochs):
@@ -192,11 +194,11 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate,
                         print('\nSaving', net_type)
                         net_type_lower = net_type.lower()
                         torch.save(model.state_dict(),
-                                   os.path.join(net_path, "{}_model".format(net_type_lower)))
+                                   os.path.join(net_path, "{}_model_test".format(net_type_lower)))
                         torch.save(optimizer.state_dict(),
-                                   os.path.join(net_path, "{}_optimizer".format(net_type_lower)))
+                                   os.path.join(net_path, "{}_optimizer_test".format(net_type_lower)))
                         torch.save(scheduler.state_dict(),
-                                   os.path.join(net_path, "{}_scheduler".format(net_type_lower)))
+                                   os.path.join(net_path, "{}_scheduler_test".format(net_type_lower)))
                     except Exception as e:
                         print("attempt to save the network failed")
                         send_message("Error {}".format(e))
