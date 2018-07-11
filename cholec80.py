@@ -1,12 +1,13 @@
-from torch.utils.data.dataset import Dataset
-from bot import *
-
-from PIL import Image, ImageFile
-
 import re
 import os
 import sys
 import datetime
+
+from PIL import Image, ImageFile
+
+from torch.utils.data.dataset import Dataset
+from bot import *
+
 
 FRAMES_PER_IMAGE = 25
 
@@ -18,12 +19,12 @@ FRAMES_PER_IMAGE = 25
 error_path = '/home/justaviju/PycharmProjects/resnet/errormsgs/'
 
 idx_label = {
-    'preparation': 0, 
-    'calottriangledissection': 1, 
-    'cleaningcoagulation': 2, 
-    'gallbladderdissection': 3, 
-    'gallbladderretraction': 4, 
-    'clippingcutting': 5, 
+    'preparation': 0,
+    'calottriangledissection': 1,
+    'cleaningcoagulation': 2,
+    'gallbladderdissection': 3,
+    'gallbladderretraction': 4,
+    'clippingcutting': 5,
     'gallbladderpackaging': 6
 }
 
@@ -42,7 +43,7 @@ def find_labels(video_dir, annotations_dir):
     labels_set = set()
     is_data_line = False
 
-    with open(os.path.join(annotations_dir,annotations_file), 'r') as annotation_file:
+    with open(os.path.join(annotations_dir, annotations_file), 'r') as annotation_file:
         for annotation_line in annotation_file:
             annotation_line = annotation_line.lower()
             frame_num = re.sub("\D", "", annotation_line)
@@ -93,9 +94,9 @@ def make_dataset(root_dir, annotations_dir, image_file_extensions):
         current += 1
 
         if total:
-            fraction = float(current)/total
+            fraction = float(current) / total
             percent = round(fraction * total)
-            sys.stdout.write("\r[{}{}]{:.2f}%".format((progress * percent), fill* (total - percent),(fraction * 100)))
+            sys.stdout.write("\r[{}{}]{:.2f}%".format((progress * percent), fill * (total - percent), (fraction * 100)))
         label_by_first_frame = find_labels(current_dir, annotations_dir)
         labels_sorted_by_first_frame = sorted(label_by_first_frame.items())
 
@@ -128,10 +129,10 @@ def get_idx_by_label(labels):
     # labels = ['preparation', 'calottriangledissection', 'cleaningcoagulation', 'gallbladderdissection', 'gallbladderretraction', 'clippingcutting', 'gallbladderpackaging']
     idx_by_label = {}
 
-    #for i, clss in enumerate(labels):
+    # for i, clss in enumerate(labels):
     #    idx_by_label[clss] = i
     return idx_label
-    #return idx_by_label
+    # return idx_by_label
 
 
 class Cholec80(Dataset):
