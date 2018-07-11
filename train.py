@@ -190,12 +190,13 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate,
                     best_model_wts = copy.deepcopy(model.state_dict())
                     try:
                         print('\nSaving', net_type)
+                        net_type_lower = net_type.lower()
                         torch.save(model.state_dict(),
-                                   os.path.join(net_path, "{}_model".format(net_type)))
+                                   os.path.join(net_path, "{}_model".format(net_type_lower)))
                         torch.save(optimizer.state_dict(),
-                                   os.path.join(net_path, "{}_optimizer".format(net_type)))
+                                   os.path.join(net_path, "{}_optimizer".format(net_type_lower)))
                         torch.save(scheduler.state_dict(),
-                                   os.path.join(net_path, "{}_scheduler".format(net_type)))
+                                   os.path.join(net_path, "{}_scheduler".format(net_type_lower)))
                     except Exception as e:
                         print("attempt to save the network failed")
                         send_message("Error {}".format(e))
