@@ -17,7 +17,8 @@ import sys
 import datetime
 import csv
 
-from cholec80 import Cholec80
+#from cholec80 import Cholec80
+from cholec80 import *
 from bot import *
 
 
@@ -74,24 +75,25 @@ def setup_dataset_folders():
         return training_folder, validation_folder
 
 
-def generate_dataset(datafolders, transformation='default_transformation'):
+def generate_dataset(data_folders, transformation='default_transformation'):
+    print(data_folders)
     dataset = {x: Cholec80((os.path.join(path, x)), annotations_path,
                            IMG_EXTENSIONS,
                            data_transforms[transformation])
-               for x in datafolders}
+               for x in data_folders}
     return dataset
 
 
-def generate_dataloader(dataset, dataset_folders, batch_size):
+def generate_dataloader(dataset, data_folders, batch_size):
     dataloaders = {x: torch.utils.data.DataLoader(dataset[x],
                                                   batch_size=batch_size,
                                                   shuffle=False, num_workers=5)
-                   for x in dataset_folders}
+                   for x in data_folders}
     return dataloaders
 
 
-def get_dataset_sizes(dataset, dataset_folders):
-    return {x: len(dataset[x]) for x in dataset_folders}
+def get_dataset_sizes(dataset, data_folders):
+    return {x: len(dataset[x]) for x in data_folders}
 
 
 def get_class_names(dataset):
@@ -111,13 +113,12 @@ def progress_out(current, total):
                      current, total, (fraction * 100)))
 
 
-def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, dataset, dataloaders,
+def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, data_sizes, dataloaders,
           dataset_folders, date, net_type, device, epochs=10):
     result_path = get_result_path(net_type.lower())
     predictions_path = os.path.join(result_path, "{}_predictions.csv".format(date))
     best_model_wts = copy.deepcopy(model.state_dict())
     validation_set = dataset_folders.pop()
-    data_sizes = get_dataset_sizes(dataset, dataset_folders)
     best_acc = 0.0
 
     for epoch in range(epochs):
