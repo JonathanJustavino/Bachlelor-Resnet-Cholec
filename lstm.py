@@ -7,11 +7,13 @@ import torch.optim as optim
 from torchvision import models
 from train import *
 import numpy as np
+from bot import *
+import os
 
 
 net_path = '/media/TCO/TCO-Studenten/justaviju/results/resnet18/model'
 parent_result_folder = '/media/data/ToolClassification/results'
-parent_network_folder = '/media/TCO/TCO-Studenten/justaviju/results'
+parent_network_folder = '/media/TCO/TCO-Studenten/justaviju/results/rnns'
 
 resnet = None
 net = None
@@ -45,49 +47,56 @@ class LSTM(nn.Module):
                 torch.zeros(1, 1, self.hidden_size))
 
 
-def train(epoch):
+def train(model, data_folders, epoch):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     criterion = nn.CrossEntropyLoss()
     total = data_sizes['1']
     num_run = 0
     batch_size = 64
+    best_acc = 0.0
 
     for ep in range(epoch):
 
         running_loss = 0.0
         running_corrects = 0
-        for inputs, labels in train_loader['1']:
-            #inputs.to(device)
-            #labels.to(device)
+        for folder in data_folders:
+            for inputs, labels in train_loader[folder]:
+                inputs.to(device)
+                labels.to(device)
 
-            num_run += 1
-            current = num_run * batch_size
-            progress_out(current, total)
-            
-            optimizer.zero_grad()
+                num_run += 1
+                current = num_run * batch_size
+                progress_out(current, total)
+                
+                optimizer.zero_grad()
 
-            output, hidden = rnn(inputs)
+                output, hidden = rnn(inputs)
 
-            loss = criterion(output, labels)
-            loss.backward()
-            optimizer.step()
+                loss = criterion(output, labels)
+                loss.backward()
+                optimizer.step()
 
-            running_loss += loss.item()
+                running_loss += loss.item()
 
-            _, pred = output.max(1)
+                _, pred = output.max(1)
 
-            running_loss += loss.item() * inputs.size(0)
-            running_corrects += torch.sum(pred == labels)
+                running_loss += loss.item() * inputs.size(0)
+                running_corrects += torch.sum(pred == labels)
 
-        epoch_loss = running_loss / total
-        epoch_acc = running_corrects.double() / total
+            epoch_loss = running_loss / total
+            epoch_acc = running_corrects.double() / total
 
-        print("Epoch: {} Loss: {:.4f} Acc: {:.4f}".format(
-                  ep, epoch_loss, epoch_acc)
-                  )
-
-
-
+            logger = "Epoch: {} Loss: {:.4f} Acc: {:.4f}".format( ep, epoch_loss, epoch_acc)
+            print(logger)
+            send_message(logger)
+            if epoch_acc > best_acc:
+                best_acc = epoch_acc
+                try:
+                    torch.save(model.state_dict(), os.path.join(parent_network_folder, 'model'))
+                    torch.save(optimizer.state_dict(), os.path.join(net_path, "{}_optimizer_test".format(net_type_lower)))
+                    #torch.save(scheduler.state_dict(), os.path.join(net_path, "{}_scheduler_test".format(net_type_lower)))
+                except:
+                    print("Saving failed")
 
 
 rnn = LSTM(7)
@@ -95,19 +104,13 @@ batch_size = 64
 net_type = 'ResNet18'
 training_folder, validation_folder = setup_dataset_folders()
 data_folders = training_folder + validation_folder
-data_folders = ['1']
+# data_folders = ['1']
 cholec = generate_dataset(data_folders)
 train_loader = generate_dataloader(cholec, data_folders, batch_size)
 data_sizes = get_dataset_sizes(cholec, data_folders)
 device = set_device()
 optimizer = optim.Adam(rnn.parameters(), 0.001)
 
-resnet = models.resnet18()
-resnet.fc = nn.Linear(3072, 7)
-resnet.load_state_dict(torch.load(net_path))
 
-
-print(data_sizes['1'])
-
-train(1)
+train(rnn, data_folders, 1)
 
