@@ -11,19 +11,21 @@ from bot import *
 import os
 
 
-net_path = '/media/TCO/TCO-Studenten/justaviju/results/resnet18/model'
-parent_result_folder = '/media/data/ToolClassification/results'
-parent_network_folder = '/media/TCO/TCO-Studenten/justaviju/results/rnns'
+cnn_path = '/media/TCO/TCO-Studenten/justaviju/results/resnet18/model'
+rnn_path = '/media/TCO/TCO-Studenten/justaviju/results/rnns'
+parent_result_folder_rnn = '/media/data/ToolClassification/results/rnns/'
+parent_network_folder_rnn = '/media/TCO/TCO-Studenten/justaviju/results/rnns'
 
 resnet = None
 net = None
+
 
 class LSTM(nn.Module):
     def __init__(self, num_classes=7, hidden_size=1):
         super(LSTM, self).__init__()
         resnet = models.resnet18()
         resnet.fc = nn.Linear(3072, 7)
-        resnet.load_state_dict(torch.load(net_path))
+        resnet.load_state_dict(torch.load(cnn_path))
         #self.hidden_size = 3072
         self.hidden_size = hidden_size
         self.hidden = self.init_hidden(1)
@@ -47,70 +49,109 @@ class LSTM(nn.Module):
                 torch.zeros(1, 1, self.hidden_size))
 
 
-def train(model, data_folders, epoch):
+def training(model, data_folders, learning_rate, optimizer, date, epoch):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     criterion = nn.CrossEntropyLoss()
-    total = data_sizes['1']
-    num_run = 0
+    result_path = get_result_path("", parent_folder=parent_result_folder_rnn)
+    print(result_path)
+    net_path = get_net_path(net_type.lower(), parent_folder=parent_network_folder_rnn)
+
+    predictions_path = os.path.join(result_path, "{}_predictions.csv".format(date))
+    validation_folder = data_folders[-1]
     batch_size = 64
     best_acc = 0.0
 
     for ep in range(epoch):
+        print("Epoch {}/{}".format(ep, epoch))
 
-        running_loss = 0.0
-        running_corrects = 0
-        for folder in data_folders:
-            for inputs, labels in train_loader[folder]:
-                inputs.to(device)
-                labels.to(device)
+        with open(os.path.join(result_path, date), 'a') as result_file:
+            result_file.write("Epoch {}:\n".format(ep))
+            for folder in data_folders:
+                running_loss = 0.0
+                running_corrects = 0
+                num_run = 0
+                total = data_sizes[folder]
 
-                num_run += 1
-                current = num_run * batch_size
-                progress_out(current, total)
-                
-                optimizer.zero_grad()
+                if folder != validation_folder:
+                    model.train()
+                else:
+                    model.eval()
+                    with open(predictions_path, 'a') as file:
+                        file.write("\nEpoch {}\n".format(ep))
 
-                output, hidden = rnn(inputs)
+                for inputs, labels in train_loader[folder]:
+                    inputs.to(device)
+                    labels.to(device)
 
-                loss = criterion(output, labels)
-                loss.backward()
-                optimizer.step()
+                    num_run += 1
+                    current = num_run * batch_size
+                    progress_out(current, total)
 
-                running_loss += loss.item()
+                    if current > 64:
+                        break
+                    
+                    optimizer.zero_grad()
 
-                _, pred = output.max(1)
+                    with torch.set_grad_enabled(folder != validation_folder):
 
-                running_loss += loss.item() * inputs.size(0)
-                running_corrects += torch.sum(pred == labels)
+                        output, hidden = rnn(inputs)
+                        _, pred = output.max(1)
 
-            epoch_loss = running_loss / total
-            epoch_acc = running_corrects.double() / total
+                        loss = criterion(output, labels)
 
-            logger = "Epoch: {} Loss: {:.4f} Acc: {:.4f}".format( ep, epoch_loss, epoch_acc)
-            print(logger)
-            send_message(logger)
-            if epoch_acc > best_acc:
-                best_acc = epoch_acc
+                        if folder != validation_folder:
+                            loss.backward()
+                            optimizer.step()
+
+                    running_loss += loss.item() * inputs.size(0)
+                    running_corrects += torch.sum(pred == labels)
+
+                    if folder == validation_folder and epoch % 5 == 0:
+                        write_epoch_predictions(predictions_path,
+                                                pred.cpu().numpy(),
+                                                labels.cpu().numpy())
+
+                epoch_loss = running_loss / total
+                epoch_acc = running_corrects.double() / total
+
+                result_file.write("\nSet: {} Loss: {:.4f} Acc: {:.4f}".format(folder, epoch_loss, epoch_acc))
+                logger = "Lstm Epoch: {} Set: {} Loss: {:.4f} Acc: {:.4f}".format(ep, folder, epoch_loss, epoch_acc)
+                print(logger)
                 try:
-                    torch.save(model.state_dict(), os.path.join(parent_network_folder, 'model'))
-                    torch.save(optimizer.state_dict(), os.path.join(net_path, "{}_optimizer_test".format(net_type_lower)))
-                    #torch.save(scheduler.state_dict(), os.path.join(net_path, "{}_scheduler_test".format(net_type_lower)))
+                    send_message(logger)
                 except:
-                    print("Saving failed")
+                    print("Sending results was not successful")
+
+                if folder == validation_folder and epoch_acc > best_acc:
+                    epoch_of_best_acc = ep
+                    best_acc = epoch_acc
+                    try:
+                        print("Saving...")
+                        torch.save(model.lstm.state_dict(), os.path.join(rnn_path, 'lstm'))
+                        torch.save(model.fc.state_dict(), os.path.join(rnn_path, 'classifier'))
+                        torch.save(optimizer.state_dict(), os.path.join(rnn_path, "{}_optimizer_test".format(net_type)))
+                        #torch.save(scheduler.state_dict(), os.path.join(net_path, "{}_scheduler_test".format(net_type)))
+                    except:
+                        print("Saving failed")
+    with open(os.path.join(result_path, date), 'a') as result_file:
+        result_file.write("{} Best val Acc: {:4f} in epoch: {} \
+        Learning rate: {}\n".format(net_type, best_acc,
+                                    epoch_of_best_acc, learning_rate))
+        result_file.write("Optimizer: {}".format(optimizer_conv))
 
 
 rnn = LSTM(7)
 batch_size = 64
-net_type = 'ResNet18'
+net_type = 'lstm-18'
 training_folder, validation_folder = setup_dataset_folders()
 data_folders = training_folder + validation_folder
-# data_folders = ['1']
 cholec = generate_dataset(data_folders)
 train_loader = generate_dataloader(cholec, data_folders, batch_size)
 data_sizes = get_dataset_sizes(cholec, data_folders)
-device = set_device()
-optimizer = optim.Adam(rnn.parameters(), 0.001)
+learning_rate = 0.0001
+optimizer = optim.Adam(rnn.parameters(), learning_rate)
+date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
 
 
-train(rnn, data_folders, 1)
+training(rnn, data_folders, learning_rate, optimizer, date, epoch=50)
 
