@@ -15,3 +15,7 @@ errormsg.txt
 #log-folders
 *.log
 bot.py
+
+#temporary ignores
+marvin_lstm
+res34_old.py
