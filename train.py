@@ -116,9 +116,12 @@ def progress_out(current, total):
 def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, data_sizes, dataloaders,
           dataset_folders, date, net_type, device, epochs=10):
     result_path = get_result_path(net_type.lower())
+    net_path = get_net_path(net_type.lower())
+    print("\nPath: ", net_path)
     predictions_path = os.path.join(result_path, "{}_predictions.csv".format(date))
     best_model_wts = copy.deepcopy(model.state_dict())
-    validation_set = dataset_folders.pop()
+    validation_set = dataset_folders[-1]
+    print("val: ", validation_set)
     best_acc = 0.0
 
     for epoch in range(epochs):
@@ -127,7 +130,7 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, dat
 
         with open(os.path.join(result_path, date), 'a') as result_file:
             result_file.write("Epoch {}:\n\n\n".format(epoch))
-
+            print(dataset_folders)
             for set in dataset_folders:
                 d_size = data_sizes[set]
                 print('Set: ', set)
@@ -181,11 +184,14 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, dat
                 print("{} Loss: {:.4f} Acc: {:.4f}".format(
                       set, epoch_loss, epoch_acc)
                       )
-                send_message("{} Acc: {:4f}, Loss: {} in epoch: {} \
-                             in set: {}".format(
-                             net_type, epoch_acc, epoch_loss, epoch, set))
                 result_file.write("Set: {} Loss: {:.4f} Acc: {:.4f}\n".format(
                                   set, epoch_loss, epoch_acc))
+                try:
+                    send_message("{} Acc: {:4f}, Loss: {} in epoch: {} \
+                                 in set: {}".format(
+                                 net_type, epoch_acc, epoch_loss, epoch, set))
+                except:
+                    print("Sending results was not successful")
 
                 if set == validation_set and epoch_acc > best_acc:
                     epoch_of_best_acc = epoch
