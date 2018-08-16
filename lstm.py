@@ -58,6 +58,8 @@ def training(model, data_folders, learning_rate, optimizer, date, epoch):
 
     predictions_path = os.path.join(result_path, "{}_predictions.csv".format(date))
     validation_folder = data_folders[-1]
+    print(data_folders)
+    print("Validationfolder: ", validation_folder)
     batch_size = 64
     best_acc = 0.0
 
@@ -86,9 +88,6 @@ def training(model, data_folders, learning_rate, optimizer, date, epoch):
                     num_run += 1
                     current = num_run * batch_size
                     progress_out(current, total)
-
-                    if current > 64:
-                        break
                     
                     optimizer.zero_grad()
 
@@ -132,6 +131,8 @@ def training(model, data_folders, learning_rate, optimizer, date, epoch):
                         torch.save(optimizer.state_dict(), os.path.join(rnn_path, "{}_optimizer_test".format(net_type)))
                         #torch.save(scheduler.state_dict(), os.path.join(net_path, "{}_scheduler_test".format(net_type)))
                     except:
+                        e = sys.exc_info()[0]
+                        print(e)
                         print("Saving failed")
     with open(os.path.join(result_path, date), 'a') as result_file:
         result_file.write("{} Best val Acc: {:4f} in epoch: {} \
