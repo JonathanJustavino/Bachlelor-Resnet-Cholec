@@ -103,7 +103,7 @@ def make_dataset(root_dir, annotations_dir, image_file_extensions):
         labels = label_by_first_frame.values()
         idx_by_label = get_idx_by_label(labels)
 
-        for image_file_name in file_names:
+        for image_file_name in sorted(file_names):
             if has_file_allowed_extension(image_file_name, image_file_extensions):
                 image_path = os.path.join(current_dir, image_file_name)
                 images.append(get_label(image_path, labels_sorted_by_first_frame, idx_by_label))
