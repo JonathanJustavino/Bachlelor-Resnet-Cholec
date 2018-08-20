@@ -60,8 +60,9 @@ def write_epoch_predictions(path, preds, labels):
         writer.writerow(labels)
 
 
-def pick_validation_folder(epoch, data_folders, data_folders_length):
-    return data_folders.pop(epoch % data_folders_length)
+def pick_validation_folder(data_folders, data_folders_length):
+    num = random.randint(0, 3)
+    return data_folders.pop(num % data_folders_length)
 
 
 def generate_dataset(data_folders, transformation='default_transformation'):
@@ -111,13 +112,13 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, dat
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
     folder_length = len(dataset_folders)
+    validation_set = pick_validation_folder(dataset_folders, folder_length)
+    dataset_folders.append(validation_set)
+    print('Validationset: ', validation_set)
 
     for epoch in range(epochs):
         print("Epoch {}/{}".format(epoch, epochs - 1))
         print("-" * 10)
-        validation_set = pick_validation_folder(epoch, dataset_folders, folder_length)
-        data_folders.append(validation_set)
-
 
         with open(os.path.join(result_path, date), 'a') as result_file:
             result_file.write("Epoch {}:\n\n\n".format(epoch))

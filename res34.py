@@ -5,7 +5,7 @@ batch_size = 128
 net_type = 'ResNet34'
 data_folders = ['1', '2', '3', '4']
 cholec = generate_dataset(data_folders)
-dataloaders = generate_dataloader(cholec, data_folders, batch_size)
+dataloaders = generate_dataloader(cholec, data_folders, batch_size, shuffling=False)
 data_sizes = get_dataset_sizes(cholec, data_folders)
 device = set_device()
 
