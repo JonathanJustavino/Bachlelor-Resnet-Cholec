@@ -60,19 +60,8 @@ def write_epoch_predictions(path, preds, labels):
         writer.writerow(labels)
 
 
-def setup_dataset_folders():
-    '''Selecting random validation set'''
-    shuffle_training = False
-    # temporary workaround
-    if shuffle_training:
-        training_folder = ['1', '2', '3', '4']
-        random.shuffle(training_folder)
-        validation_folder = list(training_folder.pop())
-        return training_folder, validation_folder
-    else:
-        training_folder = ['2', '3', '4']
-        validation_folder = ['1']
-        return training_folder, validation_folder
+def pick_validation_folder(epoch, data_folders, data_folders_length):
+    return data_folders.pop(epoch % data_folders_length)
 
 
 def generate_dataset(data_folders, transformation='default_transformation'):
@@ -84,10 +73,10 @@ def generate_dataset(data_folders, transformation='default_transformation'):
     return dataset
 
 
-def generate_dataloader(dataset, data_folders, batch_size):
+def generate_dataloader(dataset, data_folders, batch_size, shuffling):
     dataloaders = {x: torch.utils.data.DataLoader(dataset[x],
                                                   batch_size=batch_size,
-                                                  shuffle=False, num_workers=5)
+                                                  shuffle=shuffling, num_workers=5)
                    for x in data_folders}
     return dataloaders
 
@@ -120,13 +109,15 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, dat
     print("\nPath: ", net_path)
     predictions_path = os.path.join(result_path, "{}_predictions.csv".format(date))
     best_model_wts = copy.deepcopy(model.state_dict())
-    validation_set = dataset_folders[-1]
-    print("val: ", validation_set)
     best_acc = 0.0
+    folder_length = len(dataset_folders)
 
     for epoch in range(epochs):
         print("Epoch {}/{}".format(epoch, epochs - 1))
         print("-" * 10)
+        validation_set = pick_validation_folder(epoch, dataset_folders, folder_length)
+        data_folders.append(validation_set)
+
 
         with open(os.path.join(result_path, date), 'a') as result_file:
             result_file.write("Epoch {}:\n\n\n".format(epoch))
@@ -163,7 +154,7 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, dat
                     with torch.set_grad_enabled(set != validation_set):
                         outputs = model(inputs)
                         _, preds = torch.max(outputs, 1)
-                        # maybe wrap them into variables?
+
                         loss = criterion(outputs, labels)
 
                         if set != validation_set:
@@ -215,7 +206,7 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, dat
         result_file.write("{} Best val Acc: {:4f} in epoch: {} \
         Learning rate: {}\n".format(net_type, best_acc,
                                     epoch_of_best_acc, learning_rate))
-        result_file.write("Optimizer: {}".format(optimizer_conv))
+        result_file.write("Optimizer: {}".format(optimizer))
 
     model.load_state_dict(best_model_wts)
     return model
