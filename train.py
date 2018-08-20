@@ -201,11 +201,11 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, dat
                         print('\nSaving', net_type)
                         net_type_lower = net_type.lower()
                         torch.save(model.state_dict(),
-                                   os.path.join(net_path, "{}_model_test".format(net_type_lower)))
+                                   os.path.join(net_path, "model_{}".format(net_type_lower)))
                         torch.save(optimizer.state_dict(),
-                                   os.path.join(net_path, "{}_optimizer_test".format(net_type_lower)))
+                                   os.path.join(net_path, "optimizer_{}".format(net_type_lower)))
                         torch.save(scheduler.state_dict(),
-                                   os.path.join(net_path, "{}_scheduler_test".format(net_type_lower)))
+                                   os.path.join(net_path, "scheduler_{}".format(net_type_lower)))
                     except Exception as e:
                         print("attempt to save the network failed")
                         send_message("Error {}".format(e))
