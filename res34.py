@@ -1,7 +1,7 @@
 from train import *
 
 
-batch_size = 128
+batch_size = 64
 net_type = 'ResNet34'
 data_folders = ['1', '2', '3', '4']
 cholec = generate_dataset(data_folders)

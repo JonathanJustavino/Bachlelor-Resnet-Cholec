@@ -11,13 +11,14 @@ from bot import *
 import os
 
 
-cnn_path = '/media/TCO/TCO-Studenten/justaviju/results/resnet18/model'
+cnn_path = '/media/TCO/TCO-Studenten/justaviju/results/resnet18/Valset1/model'
 rnn_path = '/media/TCO/TCO-Studenten/justaviju/results/rnns'
 parent_result_folder_rnn = '/media/data/ToolClassification/results/rnns/'
 parent_network_folder_rnn = '/media/TCO/TCO-Studenten/justaviju/results/rnns'
 
 resnet = None
 net = None
+device = set_device()
 
 
 class LSTM(nn.Module):
@@ -38,6 +39,7 @@ class LSTM(nn.Module):
     def forward(self, inputs, hidden=None):
         inputs = self.conv(inputs)
         inputs = inputs.view(1, inputs.size(0), -1)
+        self.hidden = (self.hidden[0].to(device), self.hidden[1].to(device))
         output, hidden = self.lstm(inputs, self.hidden)
         output = output.view(output.size(1), output.size(2))
         output = self.fc(output)
@@ -49,7 +51,7 @@ class LSTM(nn.Module):
                 torch.zeros(1, 1, self.hidden_size))
 
 
-def training(model, data_folders, learning_rate, optimizer, date, epoch):
+def training(model, data_folders, learning_rate, optimizer, date, b_size, resnet_type, path, epoch):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     criterion = nn.CrossEntropyLoss()
     result_path = get_result_path("", parent_folder=parent_result_folder_rnn)
@@ -60,7 +62,7 @@ def training(model, data_folders, learning_rate, optimizer, date, epoch):
     validation_folder = data_folders[-1]
     print(data_folders)
     print("Validationfolder: ", validation_folder)
-    batch_size = 64
+    batch_size = b_size
     best_acc = 0.0
 
     for ep in range(epoch):
@@ -82,8 +84,8 @@ def training(model, data_folders, learning_rate, optimizer, date, epoch):
                         file.write("\nEpoch {}\n".format(ep))
 
                 for inputs, labels in train_loader[folder]:
-                    inputs.to(device)
-                    labels.to(device)
+                    inputs = inputs.to(device)
+                    labels = labels.to(device)
 
                     num_run += 1
                     current = num_run * batch_size
@@ -126,9 +128,9 @@ def training(model, data_folders, learning_rate, optimizer, date, epoch):
                     best_acc = epoch_acc
                     try:
                         print("Saving...")
-                        torch.save(model.lstm.state_dict(), os.path.join(rnn_path, 'lstm'))
-                        torch.save(model.fc.state_dict(), os.path.join(rnn_path, 'classifier'))
-                        torch.save(optimizer.state_dict(), os.path.join(rnn_path, "{}_optimizer_test".format(net_type)))
+                        torch.save(model.lstm.state_dict(), os.path.join(path, 'lstm'))
+                        torch.save(model.fc.state_dict(), os.path.join(path, 'classifier'))
+                        torch.save(optimizer.state_dict(), os.path.join(path, "{}_optimizer_test".format(net_type)))
                         #torch.save(scheduler.state_dict(), os.path.join(net_path, "{}_scheduler_test".format(net_type)))
                     except:
                         e = sys.exc_info()[0]
@@ -142,17 +144,17 @@ def training(model, data_folders, learning_rate, optimizer, date, epoch):
 
 
 rnn = LSTM(7)
-batch_size = 64
+batch_size = 90
 net_type = 'lstm-18'
-training_folder, validation_folder = setup_dataset_folders()
-data_folders = training_folder + validation_folder
+resnet_type = 'resnet18'
+data_folders = ['1', '2', '3', '4']
 cholec = generate_dataset(data_folders)
-train_loader = generate_dataloader(cholec, data_folders, batch_size)
+train_loader = generate_dataloader(cholec, data_folders, batch_size, shuffling=False)
 data_sizes = get_dataset_sizes(cholec, data_folders)
 learning_rate = 0.0001
 optimizer = optim.Adam(rnn.parameters(), learning_rate)
 date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
 
-
-training(rnn, data_folders, learning_rate, optimizer, date, epoch=50)
+rnn.to("cuda:0")
+training(rnn, data_folders, learning_rate, optimizer, date, batch_size, resnet_type, rnn_path, epoch=100)
 
