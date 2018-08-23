@@ -51,8 +51,8 @@ date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
 try:
     model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, batch_size, learning_rate, data_sizes, dataloaders, data_folders, validation_folder, date, net_type, device, epochs=80)
     torch.save(model_conv.state_dict(), os.path.join(net_path, "{}_model_test".format(net_type)))
-    send_message("Training Finished. (ResNet18)")
+    send_message("Training Finished. (ResNet50)")
 except Exception as e:
     print(e)
-    print("ResNet18 crashed...")
-    send_message("ResNet18 crashed...")
+    print("ResNet50 crashed...")
+    send_message("ResNet50 crashed...")
