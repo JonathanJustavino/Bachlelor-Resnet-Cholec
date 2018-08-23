@@ -26,7 +26,7 @@ IMG_EXTENSIONS = ['.png']
 path = '/media/data/ToolClassification/cholec80/frames'
 annotations_path = '/media/data/ToolClassification/cholec80/phase_annotations'
 
-parent_result_folder = '/media/data/ToolClassification/results'
+# parent_result_folder = '/media/data/ToolClassification/results'
 parent_network_folder = '/media/TCO/TCO-Studenten/justaviju/results'
 
 
@@ -42,7 +42,7 @@ data_transforms = {
 }
 
 
-def get_result_path(net_type, parent_folder=parent_result_folder):
+def get_result_path(net_type, parent_folder=parent_network_folder):
     return os.path.join(parent_folder, net_type)
 
 
@@ -58,11 +58,6 @@ def write_epoch_predictions(path, preds, labels):
         writer.writerow(preds)
         results.write("Labels:      ")
         writer.writerow(labels)
-
-
-def pick_validation_folder(data_folders, data_folders_length):
-    num = random.randint(0, 3)
-    return data_folders.pop(num % data_folders_length)
 
 
 def generate_dataset(data_folders, transformation='default_transformation'):
@@ -104,7 +99,7 @@ def progress_out(current, total):
 
 
 def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, data_sizes, dataloaders,
-          dataset_folders, date, net_type, device, epochs=10):
+          dataset_folders, validation_folder, date, net_type, device, epochs=10):
     result_path = get_result_path(net_type.lower())
     net_path = get_net_path(net_type.lower())
     print("\nPath: ", net_path)
@@ -112,7 +107,7 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, dat
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
     folder_length = len(dataset_folders)
-    validation_set = pick_validation_folder(dataset_folders, folder_length)
+    validation_set = str(dataset_folders.pop(validation_folder))
     dataset_folders.append(validation_set)
     print('Validationset: ', validation_set)
 

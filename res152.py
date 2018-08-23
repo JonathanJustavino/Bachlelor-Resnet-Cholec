@@ -5,7 +5,7 @@ batch_size = 64
 net_type = 'ResNet152'
 data_folders = ['1', '2', '3', '4']
 cholec = generate_dataset(data_folders)
-dataloaders = generate_dataloader(cholec, data_folders, batch_size, shuffling=False)
+dataloaders = generate_dataloader(cholec, data_folders, batch_size, shuffling=True)
 data_sizes = get_dataset_sizes(cholec, data_folders)
 device = set_device()
 
@@ -48,7 +48,7 @@ print("Optimizer", optimizer_conv)
 date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
 
 try:
-    model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, batch_size, learning_rate, data_sizes, dataloaders, data_folders, date, net_type, device, epochs=150)
+    model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, batch_size, learning_rate, data_sizes, dataloaders, data_folders, date, net_type, device, epochs=80)
     torch.save(model_conv.state_dict(), os.path.join(net_path, "{}_model_test".format(net_type)))
     send_message("Training Finished. (ResNet152)")
 except Exception as e:
