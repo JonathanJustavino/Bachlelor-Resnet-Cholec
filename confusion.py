@@ -5,10 +5,9 @@ import matplotlib.pyplot as plt
 from sklearn import svm, datasets
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
+import math
 import re
 import csv
-
-print(__doc__)
 
 
 plt.ion()
@@ -54,8 +53,6 @@ total_predictions = len(data["predictions"])
 net_labels = data["labels"]
 net_preds = data["predictions"]
 
-print(len(net_labels))
-print(len(net_preds))
 cnf_matrix = confusion_matrix(net_labels, net_preds)
 
 
@@ -107,6 +104,27 @@ def plot_confusion_matrix(cm, classes,
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
+    return cm
+
+
+def precision(matrix):
+	length = range(len(matrix))
+	labels = list(length)
+	for i in length:
+		for j in length:
+			labels[i] += matrix[i][j]
+		labels[i] = math.ceil((matrix[i][i] / labels[i]) * 100.0) / 100.0
+	return labels
+
+
+def recall(matrix):
+	length = range(len(matrix))
+	labels = list(length)
+	for j in length:
+		for i in length:
+			labels[j] += matrix[i][j]
+		labels[j] = math.ceil((matrix[j][j] / labels[j]) * 100.0) / 100.0
+	return labels
 
 
 # Compute confusion matrix
@@ -114,14 +132,27 @@ cnf_matrix = confusion_matrix(net_labels, net_preds)
 np.set_printoptions(precision=2)
 
 # Plot non-normalized confusion matrix
-plt.figure()
-plot_confusion_matrix(cnf_matrix, classes=label_numbers,
+# plt.figure()
+matrix = plot_confusion_matrix(cnf_matrix, classes=label_numbers,
                       title='Confusion matrix, without normalization')
 
 # Plot normalized confusion matrix
-plt.figure()
-plot_confusion_matrix(cnf_matrix, classes=label_numbers, normalize=True,
-                      title='Normalized confusion matrix')
+# plt.figure()
+# n_matrix = plot_confusion_matrix(cnf_matrix, classes=label_numbers, normalize=True,
+                      # title='Normalized confusion matrix')
 
-plt.show()
-q_ = input("Input: ")
+# plt.show()
+# q_ = input("Input: ")
+
+matrix = [
+	[30, 20, 10],
+	[50, 60, 10],
+	[20, 20, 80]
+]
+
+print(matrix)
+pre = precision(matrix)
+rec = recall(matrix)
+
+print(pre)
+print(rec)
