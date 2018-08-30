@@ -127,6 +127,19 @@ def recall(matrix):
 	return labels
 
 
+def accuracy(matrix):
+	length = range(len(matrix))
+	correct = 0
+	predictions = 0
+	for i in length:
+		for j in length:
+			predictions += matrix[i][j]
+
+			if i == j:
+				correct += matrix[i][j]
+	return correct / predictions
+
+
 # Compute confusion matrix
 cnf_matrix = confusion_matrix(net_labels, net_preds)
 np.set_printoptions(precision=2)
@@ -153,6 +166,8 @@ matrix = [
 print(matrix)
 pre = precision(matrix)
 rec = recall(matrix)
+acc = accuracy(matrix)
 
 print(pre)
 print(rec)
+print(acc)
