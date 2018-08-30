@@ -99,7 +99,7 @@ def progress_out(current, total):
 
 
 def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, data_sizes, dataloaders,
-          dataset_folders, validation_folder, date, net_type, device, epochs=10):
+          dataset_folders, validation_folder, date, net_type, device, epochs=50):
     result_path = get_result_path(net_type.lower())
     net_path = get_net_path(net_type.lower())
     print("\nPath: ", net_path)
