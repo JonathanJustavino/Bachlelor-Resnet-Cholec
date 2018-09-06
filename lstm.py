@@ -11,10 +11,14 @@ from bot import *
 import os
 
 
-cnn_path = '/media/TCO/TCO-Studenten/justaviju/results/resnet18/Valset1/model'
+cnn_path = '/media/TCO/TCO-Studenten/justaviju/results/resnet18/'
 rnn_path = '/media/TCO/TCO-Studenten/justaviju/results/rnns'
 parent_result_folder_rnn = '/media/data/ToolClassification/results/rnns/'
 parent_network_folder_rnn = '/media/TCO/TCO-Studenten/justaviju/results/rnns'
+cnn_model = 'model_resnet18_val_2'
+net_type = 'lstm-18'
+cnn_val_folder = 'Valset2'
+
 
 resnet = None
 net = None
@@ -22,12 +26,11 @@ device = set_device()
 
 
 class LSTM(nn.Module):
-    def __init__(self, num_classes=7, hidden_size=1):
+    def __init__(self, num_classes=7, hidden_size=512):
         super(LSTM, self).__init__()
         resnet = models.resnet18()
         resnet.fc = nn.Linear(3072, 7)
-        resnet.load_state_dict(torch.load(cnn_path))
-        #self.hidden_size = 3072
+        resnet.load_state_dict(torch.load(os.path.join(cnn_path, cnn_val_folder, cnn_model)))
         self.hidden_size = hidden_size
         self.hidden = self.init_hidden(1)
         self.conv = nn.Sequential(*(list(resnet.children())[:-1]))
@@ -51,12 +54,12 @@ class LSTM(nn.Module):
                 torch.zeros(1, 1, self.hidden_size))
 
 
-def training(model, data_folders, learning_rate, optimizer, date, b_size, resnet_type, path, epoch):
+def training(model, data_folders, learning_rate, optimizer, scheduler, date, b_size, path, epoch):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     criterion = nn.CrossEntropyLoss()
-    result_path = get_result_path("", parent_folder=parent_result_folder_rnn)
+    result_path = get_result_path("", parent_folder=parent_network_folder_rnn)
     print(result_path)
-    net_path = get_net_path(net_type.lower(), parent_folder=parent_network_folder_rnn)
+    # net_path = get_net_path(net_type.lower(), parent_folder=parent_network_folder_rnn)
 
     predictions_path = os.path.join(result_path, "{}_predictions.csv".format(date))
     validation_folder = data_folders[-1]
@@ -77,6 +80,7 @@ def training(model, data_folders, learning_rate, optimizer, date, b_size, resnet
                 total = data_sizes[folder]
 
                 if folder != validation_folder:
+                    scheduler.step()
                     model.train()
                 else:
                     model.eval()
@@ -144,17 +148,23 @@ def training(model, data_folders, learning_rate, optimizer, date, b_size, resnet
 
 
 rnn = LSTM(7)
-batch_size = 90
-net_type = 'lstm-18'
-resnet_type = 'resnet18'
+batch_size = 128
+res_path = os.path.join(rnn_path, net_type, cnn_val_folder)
 data_folders = ['1', '2', '3', '4']
 cholec = generate_dataset(data_folders)
+validation_folder = 2
+data_folders.pop(validation_folder - 1)
+data_folders.append(str(validation_folder))
+print('data_folders', data_folders)
+
 train_loader = generate_dataloader(cholec, data_folders, batch_size, shuffling=False)
 data_sizes = get_dataset_sizes(cholec, data_folders)
-learning_rate = 0.0001
-optimizer = optim.Adam(rnn.parameters(), learning_rate)
+learning_rate = 0.0005
+# only lstm!!!
+optimizer = optim.Adam(list(rnn.lstm.parameters()) + list(rnn.fc.parameters()), learning_rate)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
 date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
 
 rnn.to("cuda:0")
-training(rnn, data_folders, learning_rate, optimizer, date, batch_size, resnet_type, rnn_path, epoch=100)
+training(rnn, data_folders, learning_rate, optimizer, exp_lr_scheduler, date, batch_size, res_path, epoch=50)
 
