@@ -98,7 +98,7 @@ def progress_out(current, total):
                      current, total, (fraction * 100)))
 
 
-def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, data_sizes, dataloaders,
+def train(model, criterion, optimizer, batch_size, learning_rate, data_sizes, dataloaders,
           dataset_folders, validation_folder, date, net_type, device, epochs=50):
     result_path = get_result_path(net_type.lower())
     net_path = get_net_path(net_type.lower())
@@ -124,7 +124,7 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, dat
                 if set != validation_set:
                     # maybe remove the scheduler
                     # (only necessary for last top percentages)
-                    scheduler.step()
+                    #scheduler.step()
                     model.train()
                 else:
                     print('Validation Set', validation_set)
@@ -191,18 +191,18 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, dat
                                    os.path.join(net_path, "model_{}_val_{}".format(net_type_lower, validation_set)))
                         torch.save(optimizer.state_dict(),
                                    os.path.join(net_path, "optimizer_{}_val_{}".format(net_type_lower, validation_set)))
-                        torch.save(scheduler.state_dict(),
-                                   os.path.join(net_path, "scheduler_{}_val_{}".format(net_type_lower, validation_set)))
+                        #torch.save(scheduler.state_dict(),
+                        #          os.path.join(net_path, "scheduler_{}_val_{}".format(net_type_lower, validation_set)))
                     except Exception as e:
                         print("attempt to save the network failed")
                         send_message("Error {}".format(e))
                         send_message("Failed attempt to save the network.")
 
     with open(os.path.join(result_path, date), 'a') as result_file:
-        result_file.write("{} Best val Acc: {:4f} in epoch: {} \
-        Learning rate: {}\n".format(net_type, best_acc,
-                                    epoch_of_best_acc, learning_rate))
+        result_file.write("{} Best val Acc: {:4f} in epoch: {} \n".format(net_type, best_acc, epoch_of_best_acc))
         result_file.write("Optimizer: {}".format(optimizer))
+        result_file.write("Batch size: {}".format(batch_size))
+        #result_file.write("lr scheduler: {}".format(scheduler))
 
     model.load_state_dict(best_model_wts)
     return model
