@@ -157,11 +157,11 @@ matrix = plot_confusion_matrix(cnf_matrix, classes=label_numbers,
 # plt.show()
 # q_ = input("Input: ")
 
-matrix = [
-	[30, 20, 10],
-	[50, 60, 10],
-	[20, 20, 80]
-]
+# matrix = [
+# 	[30, 20, 10],
+# 	[50, 60, 10],
+# 	[20, 20, 80]
+# ]
 
 print(matrix)
 pre = precision(matrix)
