@@ -1,18 +1,20 @@
 import os
 import re
+import sys
 import matplotlib.pyplot as plt
 import numpy as np
 from threading import Thread
 
 
-root_folder = '/media/data/ToolClassification/results'
+root_folder = '/media/TCO/TCO-Studenten/justaviju/results/rnns'
 alt_folder = '/home/justaviju/Documents/results/'
-resnet = 'resnet34'
-resnet_type = 'train-last-layer'
+resnet = 'lstm-18/Valset3'
+resnet_type = 'Valset4'
 full_training = 'full_training'
-document = '2018-06-25_13-23'
+document = '2018-09-10_16-42'
+# full_path = os.path.join(root_folder, resnet, document)
 
-full_path = os.path.join(root_folder, resnet, document)
+full_path = sys.argv[1]
 
 
 def format_data(data):
@@ -60,7 +62,7 @@ def display_accuracy(my_list):
     plt.ylabel('Accuracy in %')
     plt.xlabel('Epoch')
     plt.title("{} {}".format(resnet, resnet_type))
-    plt.axis([0, 17, 0, 100])   
+    plt.axis([0, 40, 0, 100])   
     plt.grid(True)
     plt.show()
 
@@ -79,7 +81,7 @@ def display_loss(my_list):
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.title("{} {}".format(resnet, resnet_type))
-    plt.axis([0, 17, 0, 6])
+    plt.axis([0, 50, 0, 6])
     plt.grid(True)
     plt.show()
 
