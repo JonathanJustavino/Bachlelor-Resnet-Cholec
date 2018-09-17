@@ -6,13 +6,15 @@ import numpy as np
 from threading import Thread
 
 
-root_folder = '/media/TCO/TCO-Studenten/justaviju/results/rnns'
-resnet_type = 'Valset4'
+root_folder = '/media/TCO/TCO-Studenten/justaviju/results/'
+resnet_type = ''
 full_path = sys.argv[1]
 print(full_path)
 try:
     validation_set = re.search("Valset[1-4]", full_path, re.IGNORECASE).group()
     validation_nr = re.sub("\D", "", validation_set)
+    image_dir = re.sub("\d*.\d*.\d*.\d*.\d*$", "", full_path, re.IGNORECASE)
+    print("Image DIR: ", image_dir)
 except:
     validation_nr = -1
 
@@ -65,9 +67,12 @@ def display_accuracy(my_list):
     plt.ylabel('Accuracy in %')
     plt.xlabel('Epoch')
     plt.title("{} Test Set: {}".format(resnet_type, validation_nr))
-    plt.axis([0, 40, 0, 100])   
+    plt.axis([0, 40, 65, 100])   
     plt.grid(True)
-    plt.show()
+    # plt.show()
+    # plt.savefig('accuracy.png')
+    plt.savefig('{}/accuracy.png'.format(image_dir))
+
 
 
 def display_loss(my_list):
@@ -86,18 +91,21 @@ def display_loss(my_list):
     plt.title("{} Test Set: {}".format(resnet_type, validation_nr))
     plt.axis([0, 50, 0, 3])
     plt.grid(True)
-    plt.show()
+    # plt.show()
+    # plt.savefig('loss.png')
+    plt.savefig('{}/loss.png'.format(image_dir))
 
 
 retrieve_percentages(formatted_data)
 
 arguments = [formatted_data]
 
-t1 = Thread(target=display_loss, args=arguments)
-t2 = Thread(target=display_accuracy, args=arguments)
+# t1 = Thread(target=display_loss, args=arguments)
+# t2 = Thread(target=display_accuracy, args=arguments)
 
-t1.start()
-t2.start()
+# t1.start()
+# t2.start()
 
-# display_accuracy(formatted_data)
-# display_loss(formatted_data)
+display_accuracy(formatted_data)
+display_loss(formatted_data)
+# plt.show()
