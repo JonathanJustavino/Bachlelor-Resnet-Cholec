@@ -15,9 +15,9 @@ cnn_path = '/media/TCO/TCO-Studenten/justaviju/results/resnet18/'
 rnn_path = '/media/TCO/TCO-Studenten/justaviju/results/rnns'
 parent_result_folder_rnn = '/media/data/ToolClassification/results/rnns/'
 parent_network_folder_rnn = '/media/TCO/TCO-Studenten/justaviju/results/rnns'
-cnn_model = 'model_resnet18_val_3'
+cnn_model = 'model_resnet18_val_1'
 net_type = 'lstm-18'
-cnn_val_folder = 'Valset3'
+cnn_val_folder = 'Valset1'
 
 
 resnet = None
@@ -54,7 +54,7 @@ class LSTM(nn.Module):
                 torch.zeros(1, 1, self.hidden_size))
 
 
-def training(model, data_folders, learning_rate, optimizer, scheduler, date, b_size, path, epoch):
+def training(model, data_folders, learning_rate, optimizer, scheduler, date, b_size, path, epoch=50):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     criterion = nn.CrossEntropyLoss()
     result_path = get_result_path("", parent_folder=parent_network_folder_rnn)
@@ -121,6 +121,8 @@ def training(model, data_folders, learning_rate, optimizer, scheduler, date, b_s
 
                 result_file.write("\nSet: {} Loss: {:.4f} Acc: {:.4f}".format(folder, epoch_loss, epoch_acc))
                 logger = "Lstm Epoch: {} Set: {} Loss: {:.4f} Acc: {:.4f}".format(ep, folder, epoch_loss, epoch_acc)
+                if folder == validation_folder:
+                    logger += 'Validation Folder'
                 print(logger)
                 try:
                     send_message(logger)
@@ -141,18 +143,21 @@ def training(model, data_folders, learning_rate, optimizer, scheduler, date, b_s
                         print(e)
                         print("Saving failed")
     with open(os.path.join(result_path, date), 'a') as result_file:
-        result_file.write("{} Best val Acc: {:4f} in epoch: {} \
+        result_file.write("\n{} Best val Acc: {:4f} in epoch: {} \
         Learning rate: {}\n".format(net_type, best_acc,
                                     epoch_of_best_acc, learning_rate))
         result_file.write("Optimizer: {}".format(optimizer))
+        result_file.write("\nHidden Size: {}".format(model.hidden_size))
+        result_file.write("\nBatch size: {}".format(batch_size))
+        result_file.write("\nlr scheduler: {}, {}".format(scheduler.step_size, scheduler.gamma))
 
 
 rnn = LSTM(7)
-batch_size = 96
-res_path = os.path.join(rnn_path, net_type, cnn_val_folder)
+batch_size = 150
+res_path = os.path.join(rnn_path, net_type)
 data_folders = ['1', '2', '3', '4']
 cholec = generate_dataset(data_folders)
-validation_folder = 3
+validation_folder = 1
 data_folders.pop(validation_folder - 1)
 data_folders.append(str(validation_folder))
 print('data_folders', data_folders)
@@ -171,7 +176,7 @@ else:
     optimizer = optim.SGD(trainable_layers, lr=learning_rate, momentum=0.9)
 
 # optimizer = optim.Adam(list(rnn.lstm.parameters()) + list(rnn.fc.parameters()), learning_rate)
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.90)
 date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
 
 rnn.to("cuda:0")

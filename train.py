@@ -98,7 +98,7 @@ def progress_out(current, total):
                      current, total, (fraction * 100)))
 
 
-def train(model, criterion, optimizer, batch_size, learning_rate, data_sizes, dataloaders,
+def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, data_sizes, dataloaders,
           dataset_folders, validation_folder, date, net_type, device, epochs=50):
     result_path = get_result_path(net_type.lower())
     net_path = get_net_path(net_type.lower())
@@ -174,9 +174,10 @@ def train(model, criterion, optimizer, batch_size, learning_rate, data_sizes, da
                 result_file.write("Set: {} Loss: {:.4f} Acc: {:.4f}\n".format(
                                   set, epoch_loss, epoch_acc))
                 try:
-                    send_message("{} Acc: {:4f}, Loss: {} in epoch: {} \
-                                 in set: {}".format(
-                                 net_type, epoch_acc, epoch_loss, epoch, set))
+                    message = "{} Acc: {:4f}, Loss: {} in epoch: {} in set: {}".format(net_type, epoch_acc, epoch_loss, epoch, set)
+                    if set == validation_set:
+                        message += 'Validation Folder'
+                    send_message(message)
                 except:
                     print("Sending results was not successful")
 
@@ -200,9 +201,9 @@ def train(model, criterion, optimizer, batch_size, learning_rate, data_sizes, da
 
     with open(os.path.join(result_path, date), 'a') as result_file:
         result_file.write("{} Best val Acc: {:4f} in epoch: {} \n".format(net_type, best_acc, epoch_of_best_acc))
-        result_file.write("Optimizer: {}".format(optimizer))
-        result_file.write("Batch size: {}".format(batch_size))
-        #result_file.write("lr scheduler: {}".format(scheduler))
+        result_file.write("\nOptimizer: {}".format(optimizer))
+        result_file.write("\nBatch size: {}".format(batch_size))
+        result_file.write("\nlr scheduler step: {}, gamma: {}".format(scheduler.step_size, scheduler.gamma))
 
     model.load_state_dict(best_model_wts)
     return model
