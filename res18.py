@@ -32,7 +32,7 @@ model_conv = model_conv.to(set_device())
 criterion = nn.CrossEntropyLoss()
 trainable_layers = list(model_conv.layer4.parameters()) + list(model_conv.fc.parameters())
 
-learning_rate = 0.0000001
+learning_rate = 0.0001
 # optim Adam
 adam = True
 if adam:
@@ -42,14 +42,14 @@ else:
     optimizer_conv = optim.SGD(trainable_layers, lr=learning_rate, momentum=0.9)
 
 
-# exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.95)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=7, gamma=0.95)
 #print("Optimizer", optimizer_conv)
 # send_message("Training Started...({})".format(net_type))
 
 date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
 
 try:
-    model_conv = train(model_conv, criterion, optimizer_conv, batch_size, learning_rate, data_sizes, dataloaders, data_folders, validation_folder, date, net_type, device, epochs=50)
+    model_conv = train(model_conv, criterion, optimizer_conv, exp_lr_scheduler, batch_size, learning_rate, data_sizes, dataloaders, data_folders, validation_folder, date, net_type, device, epochs=50)
     torch.save(model_conv.state_dict(), os.path.join(net_path, "{}_model_test".format(net_type)))
     send_message("Training Finished. (ResNet18)")
 except Exception as e:
