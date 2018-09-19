@@ -13,16 +13,22 @@ import os
 
 cnn_path = '/media/TCO/TCO-Studenten/justaviju/results/resnet18/'
 rnn_path = '/media/TCO/TCO-Studenten/justaviju/results/rnns'
-parent_result_folder_rnn = '/media/data/ToolClassification/results/rnns/'
-parent_network_folder_rnn = '/media/TCO/TCO-Studenten/justaviju/results/rnns'
-cnn_model = 'model_resnet18_val_1'
+cnn_model = 'model_resnet18_val_'
 net_type = 'lstm-18'
-cnn_val_folder = 'Valset1'
+cnn_val_folder = 'Valset'
 
 
 resnet = None
 net = None
 device = set_device()
+
+def pick_validation_folder(folder_nr, data_folders, cnn_val_folder, cnn_model_path):
+	folder = data_folders[folder_nr - 1]
+	data_folders.pop(folder_nr - 1 )
+	data_folders.append(str(folder))
+	cnn_val_folder += folder
+	cnn_model_path += folder
+	return folder, data_folders, cnn_val_folder, cnn_model_path
 
 
 class LSTM(nn.Module):
@@ -57,10 +63,8 @@ class LSTM(nn.Module):
 def training(model, data_folders, learning_rate, optimizer, scheduler, date, b_size, path, epoch=50):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     criterion = nn.CrossEntropyLoss()
-    result_path = get_result_path("", parent_folder=parent_network_folder_rnn)
+    result_path = get_result_path("", parent_folder=rnn_path)
     print(result_path)
-    # net_path = get_net_path(net_type.lower(), parent_folder=parent_network_folder_rnn)
-
     predictions_path = os.path.join(result_path, "{}_predictions.csv".format(date))
     validation_folder = data_folders[-1]
     print(data_folders)
@@ -134,9 +138,9 @@ def training(model, data_folders, learning_rate, optimizer, scheduler, date, b_s
                     best_acc = epoch_acc
                     try:
                         print("Saving...")
-                        torch.save(model.lstm.state_dict(), os.path.join(path, 'lstm'))
-                        torch.save(model.fc.state_dict(), os.path.join(path, 'classifier'))
-                        torch.save(optimizer.state_dict(), os.path.join(path, "{}_optimizer".format(net_type)))
+                        torch.save(model.lstm.state_dict(), os.path.join(path, 'lstm_val{}'.format(validation_folder)))
+                        torch.save(model.fc.state_dict(), os.path.join(path, 'classifier_val{}'.format(validation_folder)))
+                        torch.save(optimizer.state_dict(), os.path.join(path, "{}_optimizer_val{}".format(net_type, validation_folder)))
                         #torch.save(scheduler.state_dict(), os.path.join(net_path, "{}_scheduler_test".format(net_type)))
                     except:
                         e = sys.exc_info()[0]
@@ -152,19 +156,20 @@ def training(model, data_folders, learning_rate, optimizer, scheduler, date, b_s
         result_file.write("\nlr scheduler: {}, {}".format(scheduler.step_size, scheduler.gamma))
 
 
-rnn = LSTM(7)
+
 batch_size = 150
 res_path = os.path.join(rnn_path, net_type)
 data_folders = ['1', '2', '3', '4']
+folder_nr = 1 # Test folder
+validation_folder, data_folders, cnn_val_folder, cnn_model = pick_validation_folder(folder_nr, data_folders, cnn_val_folder, cnn_model)
 cholec = generate_dataset(data_folders)
-validation_folder = 1
-data_folders.pop(validation_folder - 1)
-data_folders.append(str(validation_folder))
 print('data_folders', data_folders)
+
+rnn = LSTM(7)
 
 train_loader = generate_dataloader(cholec, data_folders, batch_size, shuffling=False)
 data_sizes = get_dataset_sizes(cholec, data_folders)
-learning_rate = 0.001
+learning_rate = 0.0001
 # only lstm!!!
 
 trainable_layers = list(rnn.lstm.parameters()) + list(rnn.fc.parameters())
@@ -176,7 +181,7 @@ else:
     optimizer = optim.SGD(trainable_layers, lr=learning_rate, momentum=0.9)
 
 # optimizer = optim.Adam(list(rnn.lstm.parameters()) + list(rnn.fc.parameters()), learning_rate)
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.90)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.90)
 date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
 
 rnn.to("cuda:0")

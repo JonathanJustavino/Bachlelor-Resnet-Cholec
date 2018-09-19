@@ -35,7 +35,7 @@ data_transforms = {
     'default_transformation': transforms.Compose([
         transforms.Resize(picture_size),
         transforms.RandomHorizontalFlip(),
-        transforms.RandomGrayscale(),
+        # transforms.RandomGrayscale(),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ]),
