@@ -18,6 +18,7 @@ try:
 except:
     validation_nr = -1
 
+print("\nFull Path: {}\n".format(full_path))
 
 def format_data(data):
     data_sets = {
@@ -63,15 +64,15 @@ def display_accuracy(my_list):
     graph2, = plt.plot(set_2, 'g', label='Folder 2')
     graph3, = plt.plot(set_3, 'b', label='Folder 3')
     graph4, = plt.plot(set_4, 'y', label='Folder 4')
-    plt.legend(handles=[graph1, graph2, graph3, graph4])
+    plt.legend(handles=[graph1, graph2, graph3, graph4], loc=8)
     plt.ylabel('Accuracy in %')
     plt.xlabel('Epoch')
     plt.title("{} Test Set: {}".format(resnet_type, validation_nr))
     plt.axis([0, 40, 65, 100])   
     plt.grid(True)
-    # plt.show()
+    plt.show()
     # plt.savefig('accuracy.png')
-    plt.savefig('{}/accuracy.png'.format(image_dir))
+    # plt.savefig('{}/accuracy.png'.format(image_dir))
 
 
 
@@ -85,27 +86,27 @@ def display_loss(my_list):
     graph2, = plt.plot(set_2, 'g', label='Folder 2')
     graph3, = plt.plot(set_3, 'b', label='Folder 3')
     graph4, = plt.plot(set_4, 'y', label='Folder 4')
-    plt.legend(handles=[graph1, graph2, graph3, graph4])
+    plt.legend(handles=[graph1, graph2, graph3, graph4], loc=9)
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.title("{} Test Set: {}".format(resnet_type, validation_nr))
     plt.axis([0, 50, 0, 3])
     plt.grid(True)
-    # plt.show()
+    plt.show()
     # plt.savefig('loss.png')
-    plt.savefig('{}/loss.png'.format(image_dir))
+    # plt.savefig('{}/loss.png'.format(image_dir))
 
 
 retrieve_percentages(formatted_data)
 
 arguments = [formatted_data]
 
-# t1 = Thread(target=display_loss, args=arguments)
-# t2 = Thread(target=display_accuracy, args=arguments)
+t1 = Thread(target=display_loss, args=arguments)
+t2 = Thread(target=display_accuracy, args=arguments)
 
-# t1.start()
-# t2.start()
+t1.start()
+t2.start()
 
-display_accuracy(formatted_data)
-display_loss(formatted_data)
-# plt.show()
+# display_accuracy(formatted_data)
+# display_loss(formatted_data)
+plt.show()
