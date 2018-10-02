@@ -13,6 +13,7 @@ import os
 
 cnn_path = '/media/TCO/TCO-Studenten/justaviju/results/resnet18/'
 rnn_path = '/media/TCO/TCO-Studenten/justaviju/results/rnns'
+no_scheduler_path = '/media/TCO/TCO-Studenten/justaviju/results/no-scheduler/rnns'
 cnn_model = 'model_resnet18_val_'
 net_type = 'lstm-18'
 cnn_val_folder = 'Valset'
@@ -123,15 +124,16 @@ def training(model, data_folders, learning_rate, optimizer, scheduler, date, b_s
                 epoch_loss = running_loss / total
                 epoch_acc = running_corrects.double() / total
 
+                # Sending Results
                 result_file.write("\nSet: {} Loss: {:.4f} Acc: {:.4f}".format(folder, epoch_loss, epoch_acc))
-                logger = "Lstm Epoch: {} Set: {} Loss: {:.4f} Acc: {:.4f}".format(ep, folder, epoch_loss, epoch_acc)
-                if folder == validation_folder:
-                    logger += 'Validation Folder'
-                print(logger)
-                try:
-                    send_message(logger)
-                except:
-                    print("Sending results was not successful")
+                # logger = "Lstm Epoch: {} Set: {} Loss: {:.4f} Acc: {:.4f}".format(ep, folder, epoch_loss, epoch_acc)
+                # if folder == validation_folder:
+                #     logger += 'Validation Folder'
+                # print(logger)
+                # try:
+                #     send_message(logger)
+                # except:
+                #     print("Sending results was not successful")
 
                 if folder == validation_folder and epoch_acc > best_acc:
                     epoch_of_best_acc = ep
@@ -147,7 +149,7 @@ def training(model, data_folders, learning_rate, optimizer, scheduler, date, b_s
                         print(e)
                         print("Saving failed")
     with open(os.path.join(result_path, date), 'a') as result_file:
-        result_file.write("\n{} Best val Acc: {:4f} in epoch: {} \
+        result_file.write("\n{} Best val Acc: {:4f} in epoch: {} \n\
         Learning rate: {}\n".format(net_type, best_acc,
                                     epoch_of_best_acc, learning_rate))
         result_file.write("Optimizer: {}".format(optimizer))
@@ -158,7 +160,7 @@ def training(model, data_folders, learning_rate, optimizer, scheduler, date, b_s
 
 
 batch_size = 150
-res_path = os.path.join(rnn_path, net_type)
+res_path = os.path.join(no_scheduler_path, net_type)
 data_folders = ['1', '2', '3', '4']
 folder_nr = 1 # Test folder
 validation_folder, data_folders, cnn_val_folder, cnn_model = pick_validation_folder(folder_nr, data_folders, cnn_val_folder, cnn_model)
@@ -170,10 +172,11 @@ rnn = LSTM(7)
 train_loader = generate_dataloader(cholec, data_folders, batch_size, shuffling=False)
 data_sizes = get_dataset_sizes(cholec, data_folders)
 learning_rate = 0.0001
+new_lr = 0.000001
 # only lstm!!!
 
 trainable_layers = list(rnn.lstm.parameters()) + list(rnn.fc.parameters())
-adam = False
+adam = True
 if adam:
     optimizer = optim.Adam(trainable_layers, lr=learning_rate)
 # optim SGD
