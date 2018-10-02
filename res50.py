@@ -1,7 +1,7 @@
 from train import *
 
 
-batch_size = 64
+batch_size = 128
 net_type = 'ResNet50'
 data_folders = ['1', '2', '3', '4']
 validation_folder = 3
@@ -33,7 +33,7 @@ model_conv = model_conv.to(set_device())
 criterion = nn.CrossEntropyLoss()
 trainable_layers = list(model_conv.layer4.parameters()) + list(model_conv.fc.parameters())
 
-learning_rate = 0.0005
+learning_rate = 0.000001
 # optim Adam
 adam = True
 if adam:

@@ -1,10 +1,10 @@
 from train import *
 
 
-batch_size = 64
+batch_size = 128
 net_type = 'ResNet34'
 data_folders = ['1', '2', '3', '4']
-validation_folder = 2
+validation_folder = 3
 cholec = generate_dataset(data_folders)
 dataloaders = generate_dataloader(cholec, data_folders, batch_size, shuffling=True)
 data_sizes = get_dataset_sizes(cholec, data_folders)
@@ -32,7 +32,7 @@ model_conv = model_conv.to(set_device())
 criterion = nn.CrossEntropyLoss()
 trainable_layers = list(model_conv.layer4.parameters()) + list(model_conv.fc.parameters())
 
-learning_rate = 0.0005
+learning_rate = 0.000001
 # optim Adam
 adam = True
 if adam:
