@@ -124,7 +124,7 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, dat
                 if set != validation_set:
                     # maybe remove the scheduler
                     # (only necessary for last top percentages)
-                    #scheduler.step()
+                    # scheduler.step()
                     model.train()
                 else:
                     print('Validation Set', validation_set)
@@ -173,6 +173,8 @@ def train(model, criterion, optimizer, scheduler, batch_size, learning_rate, dat
                       )
                 result_file.write("Set: {} Loss: {:.4f} Acc: {:.4f}\n".format(
                                   set, epoch_loss, epoch_acc))
+
+                # Sending Results
                 try:
                     message = "{} Acc: {:4f}, Loss: {} in epoch: {} in set: {}".format(net_type, epoch_acc, epoch_loss, epoch, set)
                     if set == validation_set:
