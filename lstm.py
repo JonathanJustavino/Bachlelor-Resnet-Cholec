@@ -85,7 +85,7 @@ def training(model, data_folders, learning_rate, optimizer, scheduler, date, b_s
                 total = data_sizes[folder]
 
                 if folder != validation_folder:
-                    scheduler.step()
+                    # scheduler.step()
                     model.train()
                 else:
                     model.eval()
